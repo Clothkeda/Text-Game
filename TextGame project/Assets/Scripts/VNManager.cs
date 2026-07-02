@@ -1,14 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using ExcelDataReader;
-using UnityEngine.UI;
+using TMPro;
 using UnityEngine;
 using UnityEngine.AdaptivePerformance;
 
 public class VNManager : MonoBehaviour
 {
-    public Text speakerName;
-    public Text speakingContent;
+    public TextMeshProUGUI speakerName;
+    public TextMeshProUGUI speakingContent;
+    public TypewriterEffect typewriterEffect;
 
     private string filePath = Constants.STORY_PATH;
     private List<ExcelReader.ExcelData> storyData;
@@ -45,9 +46,19 @@ public class VNManager : MonoBehaviour
             Debug.Log("End of story");
             return;
         }
-        var data = storyData[currentLine];
-        speakerName.text = data.speaker;
-        speakingContent.text = data.content;
-        currentLine++;
+
+        if (typewriterEffect.IsTyping())
+        {
+            typewriterEffect.CompleteLine();
+        }
+        else
+        {
+            var data = storyData[currentLine];
+            speakerName.text = data.speaker;
+            typewriterEffect.StartTyping(data.content);
+            speakingContent.text = data.content;
+            currentLine++;
+        }
+        
     }
 }
