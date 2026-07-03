@@ -3,21 +3,26 @@ using System.Collections.Generic;
 using ExcelDataReader;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.AdaptivePerformance;
+using UnityEngine.UI;
 
 public class VNManager : MonoBehaviour
 {
     public TextMeshProUGUI speakerName;
     public TextMeshProUGUI speakingContent;
     public TypewriterEffect typewriterEffect;
+    public Image avatarImage;
+    public AudioSource vocalAudio;
 
-    private string filePath = Constants.STORY_PATH;
+    private string storyPath = Constants.STORY_PATH;
+    private string defaultStoryFileName = Constants.DEFAULT_STORY_FILE_NAME;
     private List<ExcelReader.ExcelData> storyData;
     private int currentLine = 0;
     
     void Start()
     {
-        LoadStoryFromFile(filePath);
+        LoadStoryFromFile(storyPath + defaultStoryFileName);
         DisplayNextLine();
     }
 
@@ -35,7 +40,7 @@ public class VNManager : MonoBehaviour
         storyData = ExcelReader.ReadExcel(path);
         if (storyData.Count == null || storyData.Count == 0)
         {
-            Debug.LogError("No data found in the file");
+            Debug.LogError(Constants.NO_DATA_FOUND);
         }
     }
 
@@ -43,7 +48,7 @@ public class VNManager : MonoBehaviour
     {
         if (currentLine >= storyData.Count)
         {
-            Debug.Log("End of story");
+            Debug.Log(Constants.END_OF_STORY);
             return;
         }
 
@@ -53,12 +58,64 @@ public class VNManager : MonoBehaviour
         }
         else
         {
-            var data = storyData[currentLine];
-            speakerName.text = data.speaker;
-            typewriterEffect.StartTyping(data.content);
-            speakingContent.text = data.content;
-            currentLine++;
+            DisplayThisLine();
         }
-        
+    }
+
+    void DisplayThisLine()
+    {
+        var data = storyData[currentLine];
+        speakerName.text = data.speakerName;
+        speakingContent.text = data.speakingContent;
+        typewriterEffect.StartTyping(speakingContent.text);
+        if (NotNullNorEmpty(data.avatarImageFileName))
+        {
+            UpdateAvatarImage(data.avatarImageFileName);
+        }
+        else
+        {
+            avatarImage.gameObject.SetActive(false);
+        }
+
+        if (NotNullNorEmpty(data.vocalAudioFileName))
+        {
+            PlayVocalAudio(data.vocalAudioFileName);
+        }
+        currentLine++;
+    }
+
+    bool NotNullNorEmpty(string str)
+    {
+        return !string.IsNullOrEmpty(str);
+    }
+
+    void UpdateAvatarImage(string imageFileName)
+    {
+        string imagePath = Constants.AVATAR_PATH + imageFileName;
+        Sprite sprite = Resources.Load<Sprite>(imagePath);
+        if (sprite != null)
+        {
+            avatarImage.sprite = sprite;
+            avatarImage.gameObject.SetActive(true);
+        }
+        else
+        {
+            Debug.LogError(Constants.IMAGE_LOAD_FAILED + imagePath);
+        }
+    }
+
+    void PlayVocalAudio(string audioFileName)
+    {
+        string audioPath = Constants.VOCAL_PATH + audioFileName;
+        AudioClip audioClip = Resources.Load<AudioClip>(audioPath);
+        if (audioClip != null)
+        {
+            vocalAudio.clip = audioClip;
+            vocalAudio.Play();
+        }
+        else
+        {
+            Debug.LogError(Constants.AUDIO_LOAD_FAILED + audioPath);
+        }
     }
 }

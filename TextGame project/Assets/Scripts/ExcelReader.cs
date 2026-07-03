@@ -7,8 +7,10 @@ public class ExcelReader
 {
     public struct ExcelData
     {
-        public string speaker;
-        public string content;
+        public string speakerName;
+        public string speakingContent;
+        public string avatarImageFileName;
+        public string vocalAudioFileName;
     }
 
     public static List<ExcelData> ReadExcel(string filePath)
@@ -24,8 +26,10 @@ public class ExcelReader
                     while (reader.Read())
                     {
                         ExcelData data = new ExcelData();
-                        data.speaker = reader.GetString(0);
-                        data.content = reader.GetString(1);
+                        data.speakerName = reader.IsDBNull(0) ? string.Empty : reader.GetValue(0).ToString();
+                        data.speakingContent = reader.IsDBNull(1) ? string.Empty : reader.GetValue(1).ToString();
+                        data.avatarImageFileName = reader.IsDBNull(2) ? string.Empty : reader.GetValue(2).ToString();
+                        data.vocalAudioFileName = reader.IsDBNull(3) ? string.Empty : reader.GetValue(3).ToString();
                         excelData.Add(data);
                     }
                 }while (reader.NextResult());
