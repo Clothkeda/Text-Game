@@ -1,7 +1,9 @@
+using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
 using ExcelDataReader;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.AdaptivePerformance;
@@ -27,6 +29,7 @@ public class VNManager : MonoBehaviour
     
     void Start()
     {
+        Initialize();
         LoadStoryFromFile(storyPath + defaultStoryFileName);
         DisplayNextLine();
     }
@@ -38,6 +41,15 @@ public class VNManager : MonoBehaviour
         {
             DisplayNextLine();
         }
+    }
+
+    void Initialize()
+    {
+        avatarImage.gameObject.SetActive(false);
+        backgroundImage.gameObject.SetActive(false);
+        CharacterImage1.gameObject.SetActive(false);
+        CharacterImage2.gameObject.SetActive(false);
+        CharacterImage3.gameObject.SetActive(false);
     }
 
     void LoadStoryFromFile(string path)
@@ -99,15 +111,15 @@ public class VNManager : MonoBehaviour
 
         if (NotNullNorEmpty(data.character1Action))
         {
-            UpdateCharacterImage(data.character1Action, data.character1ImageFileName,CharacterImage1);
+            UpdateCharacterImage(data.character1Action, data.character1ImageFileName,CharacterImage1, data.CoordinateX1);
         }
         if (NotNullNorEmpty(data.character2Action))
         {
-            UpdateCharacterImage(data.character2Action, data.character2ImageFileName,CharacterImage2);
+            UpdateCharacterImage(data.character2Action, data.character2ImageFileName,CharacterImage2, data.CoordinateX2);
         }
         if (NotNullNorEmpty(data.character3Action))
         {
-            UpdateCharacterImage(data.character3Action, data.character3ImageFileName,CharacterImage3);
+            UpdateCharacterImage(data.character3Action, data.character3ImageFileName,CharacterImage3, data.CoordinateX3);
         }
         currentLine++;
     }
@@ -141,20 +153,37 @@ public class VNManager : MonoBehaviour
         PlayAudio(musicPath, backgroundMusic, true);
     }
 
-    void UpdateCharacterImage(string action, string imageFileName, Image characterImage)
+    void UpdateCharacterImage(string action, string imageFileName, Image characterImage, string x)
     {
-        if (action.StartsWith(Constants.characterActionAppearAt))
+        if (action.StartsWith(Constants.APPEAR_AT))
         {
             string imagePath = Constants.CHARACTER_PATH + imageFileName;
-            UpdateImage(imagePath, characterImage);
+            if (NotNullNorEmpty(x))
+            {
+                UpdateImage(imagePath, characterImage);
+                var newPosition = new Vector2(float.Parse(x), characterImage.rectTransform.anchoredPosition.y);
+                characterImage.rectTransform.anchoredPosition = newPosition;
+                characterImage.DOFade(1, Constants.DURATION_TIME).From(0);
+            }
+            else
+            {
+                Debug.LogError(Constants.COORDINATE_MISSING);
+            }
         }
-        else if (action == Constants.characterActionDisappear)
+        else if (action == Constants.DISAPPEAR)
         {
-            characterImage.gameObject.SetActive(false);
+            characterImage.DOFade(0, Constants.DURATION_TIME).OnComplete(() => characterImage.gameObject.SetActive(false));
         }
-        else if (action.StartsWith(Constants.characterActionMoveTo))
+        else if (action.StartsWith(Constants.MOVE_TO))
         {
-            
+            if (NotNullNorEmpty(x))
+            {
+                characterImage.rectTransform.DOAnchorPosX(float.Parse(x), Constants.DURATION_TIME);
+            }
+            else
+            {
+                Debug.LogError(Constants.COORDINATE_MISSING);
+            }
         }
     }
 
@@ -183,14 +212,7 @@ public class VNManager : MonoBehaviour
         }
         else
         {
-            if (audioSource == vocalAudio)
-            {
-                Debug.LogError(Constants.VOCAL_LOAD_FAILED + audioPath);
-            }
-            else if (audioSource == backgroundMusic)
-            {
-                Debug.LogError(Constants.MUSIC_LOAD_FAILED + audioPath);
-            }
+            Debug.LogError(Constants.AUDIO_LOAD_FAILED + audioPath);
         }
     }
 }
