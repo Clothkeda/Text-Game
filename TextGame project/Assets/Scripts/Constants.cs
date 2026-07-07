@@ -9,6 +9,7 @@ public class Constants
     public static string AVATAR_PATH = "image/avatar/";
     public static string BACKGROUND_PATH = "image/background/";
     public static string CHARACTER_PATH = "image/character/";
+    public static string PAGE_PATH = "image/page/";
     public static string IMAGE_LOAD_FAILED = "Failed to load image";
     
     public static string VOCAL_PATH = "audio/vocal/";

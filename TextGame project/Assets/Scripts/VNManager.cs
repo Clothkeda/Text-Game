@@ -18,6 +18,7 @@ public class VNManager : MonoBehaviour
     public AudioSource vocalAudio;
     public Image backgroundImage;
     public AudioSource backgroundMusic;
+    public Image pageImage;
     public Image CharacterImage1;
     public Image CharacterImage2;
     public Image CharacterImage3;
@@ -47,6 +48,7 @@ public class VNManager : MonoBehaviour
     {
         avatarImage.gameObject.SetActive(false);
         backgroundImage.gameObject.SetActive(false);
+        //pageImage.gameObject.SetActive(false);
         CharacterImage1.gameObject.SetActive(false);
         CharacterImage2.gameObject.SetActive(false);
         CharacterImage3.gameObject.SetActive(false);
@@ -109,6 +111,11 @@ public class VNManager : MonoBehaviour
             PlayBackgroundMusic(data.backgroundMusicFileName);
         }
 
+        if (NotNullNorEmpty(data.pageAction))
+        {
+            UpdatePageImage(data.pageAction, data.pageImageFileName,pageImage);
+        }
+
         if (NotNullNorEmpty(data.character1Action))
         {
             UpdateCharacterImage(data.character1Action, data.character1ImageFileName,CharacterImage1, data.CoordinateX1);
@@ -145,12 +152,27 @@ public class VNManager : MonoBehaviour
     {
         string imagePath = Constants.BACKGROUND_PATH + imageFileName;
         UpdateImage(imagePath, backgroundImage);
+        backgroundImage.DOFade(1, Constants.DURATION_TIME).From(0);
     }
 
     void PlayBackgroundMusic(string musicFileName)
     {
         string musicPath = Constants.MUSIC_PATH + musicFileName;
         PlayAudio(musicPath, backgroundMusic, true);
+    }
+
+    void UpdatePageImage(string action, string imageFileName, Image pageImage)
+    {
+        if (action.StartsWith(Constants.APPEAR_AT))
+        {
+            string imagePath = Constants.PAGE_PATH + imageFileName;
+            UpdateImage(imagePath, pageImage);
+            pageImage.DOFade(1, Constants.DURATION_TIME).From(0);
+        }
+        else if (action == Constants.DISAPPEAR)
+        {
+            pageImage.DOFade(0, Constants.DURATION_TIME).OnComplete(() => pageImage.gameObject.SetActive(false));
+        }
     }
 
     void UpdateCharacterImage(string action, string imageFileName, Image characterImage, string x)
