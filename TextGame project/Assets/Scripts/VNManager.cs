@@ -1,22 +1,37 @@
+using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
 using ExcelDataReader;
-using UnityEngine.UI;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.AdaptivePerformance;
+using UnityEngine.UI;
 
 public class VNManager : MonoBehaviour
 {
-    public Text speakerName;
-    public Text speakingContent;
+    public TextMeshProUGUI speakerName;
+    public TextMeshProUGUI speakingContent;
+    public TypewriterEffect typewriterEffect;
+    public Image avatarImage;
+    public AudioSource vocalAudio;
+    public Image backgroundImage;
+    public AudioSource backgroundMusic;
+    public Image pageImage;
+    public Image CharacterImage1;
+    public Image CharacterImage2;
+    public Image CharacterImage3;
 
-    private string filePath = Constants.STORY_PATH;
+    private string storyPath = Constants.STORY_PATH;
+    private string defaultStoryFileName = Constants.DEFAULT_STORY_FILE_NAME;
     private List<ExcelReader.ExcelData> storyData;
-    private int currentLine = 0;
+    private int currentLine = Constants.DEFAULT_START_LINE;
     
     void Start()
     {
-        LoadStoryFromFile(filePath);
+        Initialize();
+        LoadStoryFromFile(storyPath + defaultStoryFileName);
         DisplayNextLine();
     }
 
@@ -29,12 +44,22 @@ public class VNManager : MonoBehaviour
         }
     }
 
+    void Initialize()
+    {
+        avatarImage.gameObject.SetActive(false);
+        backgroundImage.gameObject.SetActive(false);
+        //pageImage.gameObject.SetActive(false);
+        CharacterImage1.gameObject.SetActive(false);
+        CharacterImage2.gameObject.SetActive(false);
+        CharacterImage3.gameObject.SetActive(false);
+    }
+
     void LoadStoryFromFile(string path)
     {
         storyData = ExcelReader.ReadExcel(path);
         if (storyData.Count == null || storyData.Count == 0)
         {
-            Debug.LogError("No data found in the file");
+            Debug.LogError(Constants.NO_DATA_FOUND);
         }
     }
 
@@ -42,12 +67,174 @@ public class VNManager : MonoBehaviour
     {
         if (currentLine >= storyData.Count)
         {
-            Debug.Log("End of story");
+            Debug.Log(Constants.END_OF_STORY);
             return;
         }
+
+        if (typewriterEffect.IsTyping())
+        {
+            typewriterEffect.CompleteLine();
+        }
+        else
+        {
+            DisplayThisLine();
+        }
+    }
+
+    void DisplayThisLine()
+    {
         var data = storyData[currentLine];
-        speakerName.text = data.speaker;
-        speakingContent.text = data.content;
+        speakerName.text = data.speakerName;
+        speakingContent.text = data.speakingContent;
+        typewriterEffect.StartTyping(speakingContent.text);
+        if (NotNullNorEmpty(data.avatarImageFileName))
+        {
+            UpdateAvatarImage(data.avatarImageFileName);
+        }
+        else
+        {
+            avatarImage.gameObject.SetActive(false);
+        }
+
+        if (NotNullNorEmpty(data.vocalAudioFileName))
+        {
+            PlayVocalAudio(data.vocalAudioFileName);
+        }
+
+        if (NotNullNorEmpty(data.backgroundImageFileName))
+        {
+            UpdateBackgroundImage(data.backgroundImageFileName);
+        }
+
+        if (NotNullNorEmpty(data.backgroundMusicFileName))
+        {
+            PlayBackgroundMusic(data.backgroundMusicFileName);
+        }
+
+        if (NotNullNorEmpty(data.pageAction))
+        {
+            UpdatePageImage(data.pageAction, data.pageImageFileName,pageImage);
+        }
+
+        if (NotNullNorEmpty(data.character1Action))
+        {
+            UpdateCharacterImage(data.character1Action, data.character1ImageFileName,CharacterImage1, data.CoordinateX1);
+        }
+        if (NotNullNorEmpty(data.character2Action))
+        {
+            UpdateCharacterImage(data.character2Action, data.character2ImageFileName,CharacterImage2, data.CoordinateX2);
+        }
+        if (NotNullNorEmpty(data.character3Action))
+        {
+            UpdateCharacterImage(data.character3Action, data.character3ImageFileName,CharacterImage3, data.CoordinateX3);
+        }
         currentLine++;
+    }
+
+    bool NotNullNorEmpty(string str)
+    {
+        return !string.IsNullOrEmpty(str);
+    }
+
+    void UpdateAvatarImage(string imageFileName)
+    {
+        var imagePath = Constants.AVATAR_PATH + imageFileName;
+        UpdateImage(imagePath, avatarImage);
+    }
+
+    void PlayVocalAudio(string audioFileName)
+    {
+        string audioPath = Constants.VOCAL_PATH + audioFileName;
+        PlayAudio(audioPath, vocalAudio, false);
+    }
+
+    void UpdateBackgroundImage(string imageFileName)
+    {
+        string imagePath = Constants.BACKGROUND_PATH + imageFileName;
+        UpdateImage(imagePath, backgroundImage);
+        backgroundImage.DOFade(1, Constants.DURATION_TIME).From(0);
+    }
+
+    void PlayBackgroundMusic(string musicFileName)
+    {
+        string musicPath = Constants.MUSIC_PATH + musicFileName;
+        PlayAudio(musicPath, backgroundMusic, true);
+    }
+
+    void UpdatePageImage(string action, string imageFileName, Image pageImage)
+    {
+        if (action.StartsWith(Constants.APPEAR_AT))
+        {
+            string imagePath = Constants.PAGE_PATH + imageFileName;
+            UpdateImage(imagePath, pageImage);
+            pageImage.DOFade(1, Constants.DURATION_TIME).From(0);
+        }
+        else if (action == Constants.DISAPPEAR)
+        {
+            pageImage.DOFade(0, Constants.DURATION_TIME).OnComplete(() => pageImage.gameObject.SetActive(false));
+        }
+    }
+
+    void UpdateCharacterImage(string action, string imageFileName, Image characterImage, string x)
+    {
+        if (action.StartsWith(Constants.APPEAR_AT))
+        {
+            string imagePath = Constants.CHARACTER_PATH + imageFileName;
+            if (NotNullNorEmpty(x))
+            {
+                UpdateImage(imagePath, characterImage);
+                var newPosition = new Vector2(float.Parse(x), characterImage.rectTransform.anchoredPosition.y);
+                characterImage.rectTransform.anchoredPosition = newPosition;
+                characterImage.DOFade(1, Constants.DURATION_TIME).From(0);
+            }
+            else
+            {
+                Debug.LogError(Constants.COORDINATE_MISSING);
+            }
+        }
+        else if (action == Constants.DISAPPEAR)
+        {
+            characterImage.DOFade(0, Constants.DURATION_TIME).OnComplete(() => characterImage.gameObject.SetActive(false));
+        }
+        else if (action.StartsWith(Constants.MOVE_TO))
+        {
+            if (NotNullNorEmpty(x))
+            {
+                characterImage.rectTransform.DOAnchorPosX(float.Parse(x), Constants.DURATION_TIME);
+            }
+            else
+            {
+                Debug.LogError(Constants.COORDINATE_MISSING);
+            }
+        }
+    }
+
+    void UpdateImage(string imagePath, Image image)
+    {
+        Sprite sprite = Resources.Load<Sprite>(imagePath);
+        if (sprite != null)
+        {
+            image.sprite = sprite;
+            image.gameObject.SetActive(true);
+        }
+        else
+        {
+            Debug.LogError(Constants.IMAGE_LOAD_FAILED + imagePath);
+        }
+    }
+
+    void PlayAudio(string audioPath, AudioSource audioSource, bool isLoop)
+    {
+        AudioClip audioClip = Resources.Load<AudioClip>(audioPath);
+        if (audioClip != null)
+        {
+            audioSource.clip = audioClip;
+            audioSource.Play();
+            audioSource.loop = isLoop;
+        }
+        else
+        {
+            Debug.LogError(Constants.AUDIO_LOAD_FAILED + audioPath);
+        }
     }
 }
