@@ -19,20 +19,23 @@ public class VNManager : MonoBehaviour
     public Image backgroundImage;
     public AudioSource backgroundMusic;
     public Image pageImage;
-    public Image CharacterImage1;
-    public Image CharacterImage2;
-    public Image CharacterImage3;
+    public Image characterImage1;
+    public Image characterImage2;
+    public Image characterImage3;
+    
+    public GameObject choicePanel;
+    public Button choiceButton1;
+    public Button choiceButton2;
 
     private string storyPath = Constants.STORY_PATH;
     private string defaultStoryFileName = Constants.DEFAULT_STORY_FILE_NAME;
+    public string excelFileExtension = Constants.EXCEL_FILE_EXTENSION;
     private List<ExcelReader.ExcelData> storyData;
     private int currentLine = Constants.DEFAULT_START_LINE;
     
     void Start()
     {
-        Initialize();
-        LoadStoryFromFile(storyPath + defaultStoryFileName);
-        DisplayNextLine();
+        InitializeAndLoadStory(defaultStoryFileName);
     }
 
     // Update is called once per frame
@@ -44,18 +47,28 @@ public class VNManager : MonoBehaviour
         }
     }
 
+    void InitializeAndLoadStory(string fileName)
+    {
+        Initialize();
+        LoadStoryFromFile(fileName);
+        DisplayNextLine();
+    }
+
     void Initialize()
     {
+        currentLine = Constants.DEFAULT_START_LINE;
         avatarImage.gameObject.SetActive(false);
         backgroundImage.gameObject.SetActive(false);
         //pageImage.gameObject.SetActive(false);
-        CharacterImage1.gameObject.SetActive(false);
-        CharacterImage2.gameObject.SetActive(false);
-        CharacterImage3.gameObject.SetActive(false);
+        characterImage1.gameObject.SetActive(false);
+        characterImage2.gameObject.SetActive(false);
+        characterImage3.gameObject.SetActive(false);
+        choicePanel.SetActive(false);
     }
 
-    void LoadStoryFromFile(string path)
+    void LoadStoryFromFile(string fileName)
     {
+        var path = storyPath + fileName + excelFileExtension;
         storyData = ExcelReader.ReadExcel(path);
         if (storyData.Count == null || storyData.Count == 0)
         {
@@ -65,12 +78,20 @@ public class VNManager : MonoBehaviour
 
     void DisplayNextLine()
     {
-        if (currentLine >= storyData.Count)
+        if (currentLine == storyData.Count - 1)
         {
-            Debug.Log(Constants.END_OF_STORY);
-            return;
-        }
+            if(storyData[currentLine].speakerName == Constants.END_OF_STORY)
+            {
+                Debug.Log(Constants.END_OF_STORY);
+                return;
+            }
 
+            if (storyData[currentLine].speakerName == Constants.CHOICE)
+            {
+                ShowChoices();
+                return;
+            }
+        }
         if (typewriterEffect.IsTyping())
         {
             typewriterEffect.CompleteLine();
@@ -118,15 +139,15 @@ public class VNManager : MonoBehaviour
 
         if (NotNullNorEmpty(data.character1Action))
         {
-            UpdateCharacterImage(data.character1Action, data.character1ImageFileName,CharacterImage1, data.CoordinateX1);
+            UpdateCharacterImage(data.character1Action, data.character1ImageFileName,characterImage1, data.coordinateX1);
         }
         if (NotNullNorEmpty(data.character2Action))
         {
-            UpdateCharacterImage(data.character2Action, data.character2ImageFileName,CharacterImage2, data.CoordinateX2);
+            UpdateCharacterImage(data.character2Action, data.character2ImageFileName,characterImage2, data.coordinateX2);
         }
         if (NotNullNorEmpty(data.character3Action))
         {
-            UpdateCharacterImage(data.character3Action, data.character3ImageFileName,CharacterImage3, data.CoordinateX3);
+            UpdateCharacterImage(data.character3Action, data.character3ImageFileName,characterImage3, data.coordinateX3);
         }
         currentLine++;
     }
@@ -134,6 +155,18 @@ public class VNManager : MonoBehaviour
     bool NotNullNorEmpty(string str)
     {
         return !string.IsNullOrEmpty(str);
+    }
+
+    void ShowChoices()
+    {
+        var data = storyData[currentLine];
+        choiceButton1.onClick.RemoveAllListeners();
+        choiceButton2.onClick.RemoveAllListeners();
+        choicePanel.SetActive(true);
+        choiceButton1.GetComponentInChildren<TextMeshProUGUI>().text = data.speakingContent;
+        choiceButton1.onClick.AddListener(() => InitializeAndLoadStory(data.avatarImageFileName));
+        choiceButton2.GetComponentInChildren<TextMeshProUGUI>().text = data.vocalAudioFileName;
+        choiceButton2.onClick.AddListener(() => InitializeAndLoadStory(data.backgroundImageFileName));
     }
 
     void UpdateAvatarImage(string imageFileName)

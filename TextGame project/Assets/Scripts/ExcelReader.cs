@@ -16,13 +16,13 @@ public class ExcelReader
         public string pageAction;
         public string pageImageFileName;
         public string character1Action;
-        public string CoordinateX1;
+        public string coordinateX1;
         public string character1ImageFileName;
         public string character2Action;
-        public string CoordinateX2;
+        public string coordinateX2;
         public string character2ImageFileName;
         public string character3Action;
-        public string CoordinateX3;
+        public string coordinateX3;
         public string character3ImageFileName;
 
     }
@@ -49,13 +49,13 @@ public class ExcelReader
                         data.pageAction = reader.IsDBNull(6) ? string.Empty : reader.GetValue(6).ToString();
                         data.pageImageFileName = reader.IsDBNull(7) ? string.Empty : reader.GetValue(7).ToString();
                         data.character1Action = reader.IsDBNull(8) ? string.Empty : reader.GetValue(8).ToString();
-                        data.CoordinateX1 = reader.IsDBNull(9) ? string.Empty : reader.GetValue(9).ToString();
+                        data.coordinateX1 = reader.IsDBNull(9) ? string.Empty : reader.GetValue(9).ToString();
                         data.character1ImageFileName = reader.IsDBNull(10) ? string.Empty : reader.GetValue(10).ToString();
                         data.character2Action = reader.IsDBNull(11) ? string.Empty : reader.GetValue(11).ToString();
-                        data.CoordinateX2 = reader.IsDBNull(12) ? string.Empty : reader.GetValue(12).ToString();
+                        data.coordinateX2 = reader.IsDBNull(12) ? string.Empty : reader.GetValue(12).ToString();
                         data.character2ImageFileName = reader.IsDBNull(13) ? string.Empty : reader.GetValue(13).ToString();
                         data.character3Action = reader.IsDBNull(14) ? string.Empty : reader.GetValue(14).ToString();
-                        data.CoordinateX3 = reader.IsDBNull(15) ? string.Empty : reader.GetValue(15).ToString();
+                        data.coordinateX3 = reader.IsDBNull(15) ? string.Empty : reader.GetValue(15).ToString();
                         data.character3ImageFileName = reader.IsDBNull(16) ? string.Empty : reader.GetValue(16).ToString();
                         excelData.Add(data);
                     }
