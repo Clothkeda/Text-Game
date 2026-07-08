@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
@@ -26,10 +27,13 @@ public class VNManager : MonoBehaviour
     public GameObject choicePanel;
     public Button choiceButton1;
     public Button choiceButton2;
+    
+    public GameObject bottomButtons;
+    public Button autoButton;
 
-    private string storyPath = Constants.STORY_PATH;
-    private string defaultStoryFileName = Constants.DEFAULT_STORY_FILE_NAME;
-    public string excelFileExtension = Constants.EXCEL_FILE_EXTENSION;
+    private readonly string storyPath = Constants.STORY_PATH;
+    private readonly string defaultStoryFileName = Constants.DEFAULT_STORY_FILE_NAME;
+    private readonly string excelFileExtension = Constants.EXCEL_FILE_EXTENSION;
     private List<ExcelReader.ExcelData> storyData;
     private int currentLine = Constants.DEFAULT_START_LINE;
     
@@ -43,7 +47,10 @@ public class VNManager : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            DisplayNextLine();
+            if (!IsHittingBottomButtons())
+            {
+                DisplayNextLine();
+            }
         }
     }
 
@@ -64,6 +71,7 @@ public class VNManager : MonoBehaviour
         characterImage2.gameObject.SetActive(false);
         characterImage3.gameObject.SetActive(false);
         choicePanel.SetActive(false);
+        autoButton.onClick.AddListener(OnAutoButtonClick);
     }
 
     void LoadStoryFromFile(string fileName)
@@ -268,6 +276,45 @@ public class VNManager : MonoBehaviour
         else
         {
             Debug.LogError(Constants.AUDIO_LOAD_FAILED + audioPath);
+        }
+    }
+
+    bool IsHittingBottomButtons()
+    {
+        return RectTransformUtility.RectangleContainsScreenPoint(
+            bottomButtons.GetComponent<RectTransform>(),
+            Input.mousePosition,
+            null
+            );
+    }
+    private bool isAutoPlay = false;
+
+    void OnAutoButtonClick()
+    {
+        isAutoPlay =  !isAutoPlay;
+        Debug.Log("isAutoPlay");
+        UpdateButtonImage((isAutoPlay ? Constants.AUTO_ON : Constants.AUTO_OFF), autoButton);
+        if (isAutoPlay)
+        {
+            StartCoroutine(StartAutoPlay());
+        }
+    }
+
+    void UpdateButtonImage(string imageFileName, Button button)
+    {
+        string imagePath = Constants.BUTTON_PATH + imageFileName;
+        UpdateImage(imagePath, button.image);
+    }
+
+    private IEnumerator StartAutoPlay()
+    {
+        while (isAutoPlay)
+        {
+            if (!typewriterEffect.IsTyping())
+            {
+                DisplayNextLine();
+            }
+            yield return new WaitForSeconds(Constants.DEFAULT_WAITING_SECONDS);
         }
     }
 }
