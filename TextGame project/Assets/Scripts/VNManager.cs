@@ -32,6 +32,8 @@ public class VNManager : MonoBehaviour
     public GameObject bottomButtons;
     public Button autoButton;
     public Button skipButton;
+    public Button saveButton;
+    public Button loadButton;
 
     private readonly string storyPath = Constants.STORY_PATH;
     private readonly string defaultStoryFileName = Constants.DEFAULT_STORY_FILE_NAME;
@@ -67,6 +69,8 @@ public class VNManager : MonoBehaviour
     {
         autoButton.onClick.AddListener(OnAutoButtonClick);
         skipButton.onClick.AddListener(OnSkipButtonClick);
+        saveButton.onClick.AddListener(OnSaveButtonClick);
+        loadButton.onClick.AddListener(OnLoadButtonClick);
     }
 
     void InitializeAndLoadStory(string fileName)
@@ -345,6 +349,16 @@ public class VNManager : MonoBehaviour
             StopCoroutine(SkipToMaxReachedLine());
             EndSkip();
         }
+    }
+
+    void OnSaveButtonClick()
+    {
+        SaveLoadManager.Instance.ShowSaveLoadUI(true);
+    }
+
+    void OnLoadButtonClick()
+    {
+        SaveLoadManager.Instance.ShowSaveLoadUI(false);
     }
 
     bool CanSkip()
