@@ -14,8 +14,16 @@ public class Constants
     public static string PAGE_PATH = "image/page/";
     public static string IMAGE_LOAD_FAILED = "Failed to load image";
     
+    public static float DEFAULT_TYPING_SPEED = 0.05f;
+    public static float SKIP_MODE_TYPING_SPEED = 0.01f;
+    
     public static string AUTO_ON = "autoplayon";
     public static string AUTO_OFF = "autoplayoff";
+    public static float DEFAULT_AUTO_WAITING_SECONDS = 0.1f;
+    
+    public static string SKIP_ON = "skipon";
+    public static string SKIP_OFF = "skipoff";
+    public static float DEFAULT_SKIP_WAITING_SECONDS = 0.02f;
     
     public static string VOCAL_PATH = "audio/vocal/";
     public static string MUSIC_PATH = "audio/music/";
@@ -24,7 +32,6 @@ public class Constants
     public static string NO_DATA_FOUND = "No data found";
     public static string END_OF_STORY = "End of story";
     public static string CHOICE = "choice";
-    public static float DEFAULT_WAITING_SECONDS = 0.1f;
 
     public static string APPEAR_AT = "appearAt";
     public static string DISAPPEAR = "disappear";

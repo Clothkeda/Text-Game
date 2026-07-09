@@ -2361,7 +2361,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TypewriterEffect
   textDisplay: {fileID: 72143265}
-  waitingSeconds: 0.05
+  typingSpeed: 0.05
 --- !u!4 &1726725749
 Transform:
   m_ObjectHideFlags: 0
@@ -2422,6 +2422,7 @@ MonoBehaviour:
   choiceButton2: {fileID: 329398834}
   bottomButtons: {fileID: 1713705947}
   autoButton: {fileID: 960018708}
+  skipButton: {fileID: 212983370}
 --- !u!4 &1845535350
 Transform:
   m_ObjectHideFlags: 0
