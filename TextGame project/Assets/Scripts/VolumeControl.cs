@@ -11,7 +11,7 @@ public class VolumeControl : MonoBehaviour
 
     private void Awake()
     {
-        back=transform. GetChild(2).GetComponent<Button>();
+        back=transform. GetChild(3).GetComponent<Button>();
         
         back.onClick.AddListener(Back);
     }
