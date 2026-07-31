@@ -2,11 +2,11 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    private Animator ani;
-    private Rigidbody2D rBody;
+    public Animator ani;
+    public Rigidbody2D rBody;
     // 保存上一帧有效移动方向
-    private float lastH;
-    private float lastV;
+    public float lastH;
+    public float lastV;
     
     void Start()
     {
