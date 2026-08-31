@@ -14,7 +14,7 @@ public class Constants
     public static string PAGE_PATH = "image/page/";
     public static string IMAGE_LOAD_FAILED = "Failed to load image";
     
-    public static float DEFAULT_TYPING_SPEED = 0.05f;
+    public static float DEFAULT_TYPING_SPEED = 0.5f;
     public static float SKIP_MODE_TYPING_SPEED = 0.01f;
     
     public static string AUTO_ON = "autoplayon";
@@ -46,4 +46,9 @@ public class Constants
     public static string SAVE_GAME = "save_game";
     public static string LOAD_GAME = "load_game";
     public static string EMPLY_SLOT = "emply_slot";
+    
+    public static string CAMERA_NOT_FOUND = "Main camera not found!";
+    public static string SAVE_FILE_PATH = "saves";
+    public static string SAVE_FILE_EXTENSION = "json";
+    
 }

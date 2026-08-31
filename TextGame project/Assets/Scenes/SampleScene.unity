@@ -3733,6 +3733,50 @@ MonoBehaviour:
   loadButton: {fileID: 625917803}
   settingsButton: {fileID: 1950001877}
   quitButton: {fileID: 1775452144}
+--- !u!1 &910096198
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 910096200}
+  - component: {fileID: 910096199}
+  m_Layer: 0
+  m_Name: ScreenShotter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &910096199
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910096198}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37fe36f2bf89f9b459ac29503ea197c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ScreenShotter
+--- !u!4 &910096200
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910096198}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1845535350}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &960018706
 GameObject:
   m_ObjectHideFlags: 0
@@ -5708,8 +5752,8 @@ Canvas:
   m_GameObject: {fileID: 1561062981}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
-  m_Camera: {fileID: 0}
+  m_RenderMode: 1
+  m_Camera: {fileID: 519420031}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -7479,8 +7523,8 @@ MonoBehaviour:
   gamePanel: {fileID: 334495277}
   dialogueBox: {fileID: 1941878930}
   speakerName: {fileID: 22207545}
-  speakingContent: {fileID: 72143265}
   typewriterEffect: {fileID: 1726725748}
+  screenShotter: {fileID: 910096199}
   avatarImage: {fileID: 1522092061}
   vocalAudio: {fileID: 249094227}
   backgroundImage: {fileID: 1946285694}
@@ -7517,6 +7561,7 @@ Transform:
   - {fileID: 1726725749}
   - {fileID: 1353873118}
   - {fileID: 883194816}
+  - {fileID: 910096200}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1847016985
