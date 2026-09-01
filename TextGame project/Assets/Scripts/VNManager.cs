@@ -84,6 +84,7 @@ public class VNManager : MonoBehaviour
         if (!MenuManager.Instance.menuPanel.activeSelf &&
             !SaveLoadManager.Instance.saveLoadPanel.activeSelf &&
             !HistoryManager.Instance.historyScrollView.activeSelf &&
+            !SettingManager.Instance.settingPanel.activeSelf &&
             gamePanel.activeSelf)
         {
             if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Space))
@@ -132,7 +133,7 @@ public class VNManager : MonoBehaviour
         saveButton.onClick.AddListener(OnSaveButtonClick);
         loadButton.onClick.AddListener(OnLoadButtonClick);
         historyButton.onClick.AddListener(OnHistoryButtonClick);
-        //settingButton.onClick.AddListener(OnSettingButtonClick);
+        settingButton.onClick.AddListener(OnSettingButtonClick);
         homeButton.onClick.AddListener(OnHomeButtonClick);
         homeButton.onClick.AddListener(OnCloseButtonClick);
     }
@@ -612,6 +613,12 @@ public class VNManager : MonoBehaviour
     void OnHistoryButtonClick()
     {
         HistoryManager.Instance.ShowHistory(historyRecords);
+    }
+    #endregion
+    #region Setting
+    void OnSettingButtonClick()
+    {
+        SettingManager.Instance.ShowSettingPanel();
     }
     #endregion
     #endregion
