@@ -6,13 +6,14 @@ using TMPro;
 public class TypewriterEffect : MonoBehaviour
 {
     public TextMeshProUGUI textDisplay;
-    public float typingSpeed = Constants.DEFAULT_TYPING_SPEED;
-
+    
+    public float typingSpeed;
     private Coroutine typingCoroutine;
     private bool isTyping;
 
-    public void StartTyping(string text)
+    public void StartTyping(string text, float speed)
     {
+        typingSpeed = speed;
         if (typingCoroutine != null)
         {
             StopCoroutine(typingCoroutine);
@@ -44,8 +45,5 @@ public class TypewriterEffect : MonoBehaviour
         isTyping = false;
     }
 
-    public bool IsTyping()
-    {
-        return isTyping;
-    }
+    public bool IsTyping() => isTyping;
 }

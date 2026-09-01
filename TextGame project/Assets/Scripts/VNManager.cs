@@ -1,23 +1,21 @@
-using System;
 using DG.Tweening;
+using Newtonsoft.Json;
 using System.Collections;
 using System.Collections.Generic;
-using ExcelDataReader;
-using NUnit.Framework.Constraints;
+using System.IO;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.AdaptivePerformance;
 using UnityEngine.UI;
 
 public class VNManager : MonoBehaviour
 {
+    #region Variables
     public GameObject gamePanel;
     public GameObject dialogueBox;
     public TextMeshProUGUI speakerName;
-    public TextMeshProUGUI speakingContent;
     public TypewriterEffect typewriterEffect;
+    public ScreenShotter screenShotter;
+    
     public Image avatarImage;
     public AudioSource vocalAudio;
     public Image backgroundImage;
@@ -44,16 +42,23 @@ public class VNManager : MonoBehaviour
     private readonly string storyPath = Constants.STORY_PATH;
     private readonly string defaultStoryFileName = Constants.DEFAULT_STORY_FILE_NAME;
     private readonly string excelFileExtension = Constants.EXCEL_FILE_EXTENSION;
+
+    private string saveFolderPath;
+    private byte[] screenshotData;
+    private string currentSpeakingContent;
+    
     private List<ExcelReader.ExcelData> storyData;
     private int currentLine;
     private string currentStoryFileName;
+    private float currentTypingSpeed = Constants.DEFAULT_TYPING_SPEED;
     
     private bool isAutoPlay = false;
     private bool isSkip = false;
     private int maxReachedLineIndex = 0;
     private Dictionary<string, int> globalMaxReachedLineIndices = new Dictionary<string, int>();
     public static VNManager Instance { get; private set; }
-
+    #endregion
+    #region Lifecycle
     private void Awake()
     {
         if (Instance == null)
@@ -64,19 +69,17 @@ public class VNManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
-        
     }
-    
     void Start()
     {
+        InitializeSaveFilePath();
         bottomButtonsAddListener();
-        gamePanel.SetActive(false);
     }
-
-    // Update is called once per frame
     void Update()
     {
-        if (gamePanel.activeInHierarchy &&  Input.GetMouseButtonDown(0))
+        if (!MenuManager.Instance.menuPanel.activeSelf &&
+            !SaveLoadManager.Instance.saveLoadPanel.activeSelf &&
+            gamePanel.activeInHierarchy &&  Input.GetMouseButtonDown(0))
         {
             if (!dialogueBox.activeSelf)
             {
@@ -84,14 +87,20 @@ public class VNManager : MonoBehaviour
             }
             else if (!IsHittingBottomButtons())
             {
-                if (!SaveLoadManager.Instance.saveLoadPanel.activeSelf)  
-                {
-                    DisplayThisLine();
-                }
+                DisplayNextLine();
             }
         }
     }
-
+    #endregion
+    #region Initialization
+    void InitializeSaveFilePath()
+    {
+        saveFolderPath = Path.Combine(Application.persistentDataPath, Constants.SAVE_FILE_PATH);
+        if (!Directory.Exists(saveFolderPath))
+        {
+            Directory.CreateDirectory(saveFolderPath);
+        }
+    }
     void bottomButtonsAddListener()
     {
         autoButton.onClick.AddListener(OnAutoButtonClick);
@@ -102,32 +111,32 @@ public class VNManager : MonoBehaviour
         homeButton.onClick.AddListener(OnHomeButtonClick);
         homeButton.onClick.AddListener(OnCloseButtonClick);
     }
-
     public void StartGame()
     {
         InitializeAndLoadStory(defaultStoryFileName);
     }
-
     void InitializeAndLoadStory(string fileName)
     {
         Initialize();
         LoadStoryFromFile(fileName);
         DisplayNextLine();
     }
-
     void Initialize()
     {
         currentLine = Constants.DEFAULT_START_LINE;
+        //pageImage.gameObject.SetActive(false);
+        backgroundImage.gameObject.SetActive(false);
+        backgroundMusic.gameObject.SetActive(false);
         
         avatarImage.gameObject.SetActive(false);
-        backgroundImage.gameObject.SetActive(false);
-        //pageImage.gameObject.SetActive(false);
+        vocalAudio.gameObject.SetActive(false);
+        
         characterImage1.gameObject.SetActive(false);
         characterImage2.gameObject.SetActive(false);
         characterImage3.gameObject.SetActive(false);
+        
         choicePanel.SetActive(false);
     }
-
     void LoadStoryFromFile(string fileName)
     {
         currentStoryFileName = fileName;
@@ -147,7 +156,8 @@ public class VNManager : MonoBehaviour
             globalMaxReachedLineIndices[currentStoryFileName] = maxReachedLineIndex;
         }
     }
-
+    #endregion
+    #region Display
     void DisplayNextLine()
     {
         if (currentLine > maxReachedLineIndex)
@@ -189,8 +199,8 @@ public class VNManager : MonoBehaviour
     {
         var data = storyData[currentLine];
         speakerName.text = data.speakerName;
-        speakingContent.text = data.speakingContent;
-        typewriterEffect.StartTyping(speakingContent.text);
+        currentSpeakingContent = data.speakingContent;
+        typewriterEffect.StartTyping(currentSpeakingContent, currentTypingSpeed);
         if (NotNullNorEmpty(data.avatarImageFileName))
         {
             UpdateAvatarImage(data.avatarImageFileName);
@@ -199,27 +209,22 @@ public class VNManager : MonoBehaviour
         {
             avatarImage.gameObject.SetActive(false);
         }
-
         if (NotNullNorEmpty(data.vocalAudioFileName))
         {
             PlayVocalAudio(data.vocalAudioFileName);
         }
-
         if (NotNullNorEmpty(data.backgroundImageFileName))
         {
             UpdateBackgroundImage(data.backgroundImageFileName);
         }
-
         if (NotNullNorEmpty(data.backgroundMusicFileName))
         {
             PlayBackgroundMusic(data.backgroundMusicFileName);
         }
-
         if (NotNullNorEmpty(data.pageAction))
         {
             UpdatePageImage(data.pageAction, data.pageImageFileName,pageImage);
         }
-
         if (NotNullNorEmpty(data.character1Action))
         {
             UpdateCharacterImage(data.character1Action, data.character1ImageFileName,characterImage1, data.coordinateX1);
@@ -239,7 +244,8 @@ public class VNManager : MonoBehaviour
     {
         return !string.IsNullOrEmpty(str);
     }
-
+    #endregion
+    #region Choices
     void ShowChoices()
     {
         var data = storyData[currentLine];
@@ -251,32 +257,46 @@ public class VNManager : MonoBehaviour
         choiceButton2.GetComponentInChildren<TextMeshProUGUI>().text = data.vocalAudioFileName;
         choiceButton2.onClick.AddListener(() => InitializeAndLoadStory(data.backgroundImageFileName));
     }
-
+    #endregion
+    #region Audios
+    void PlayVocalAudio(string audioFileName)
+        {
+            string audioPath = Constants.VOCAL_PATH + audioFileName;
+            PlayAudio(audioPath, vocalAudio, false);
+        }
+    void PlayBackgroundMusic(string musicFileName)
+        {
+            string musicPath = Constants.MUSIC_PATH + musicFileName;
+            PlayAudio(musicPath, backgroundMusic, true);
+        }
+    void PlayAudio(string audioPath, AudioSource audioSource, bool isLoop)
+        {
+            AudioClip audioClip = Resources.Load<AudioClip>(audioPath);
+            if (audioClip != null)
+            {
+                audioSource.clip = audioClip;
+                audioSource.gameObject.SetActive(true);
+                audioSource.Play();
+                audioSource.loop = isLoop;
+            }
+            else
+            {
+                Debug.LogError(Constants.AUDIO_LOAD_FAILED + audioPath);
+            }
+        }
+    #endregion
+    #region Images
     void UpdateAvatarImage(string imageFileName)
     {
         var imagePath = Constants.AVATAR_PATH + imageFileName;
         UpdateImage(imagePath, avatarImage);
     }
-
-    void PlayVocalAudio(string audioFileName)
-    {
-        string audioPath = Constants.VOCAL_PATH + audioFileName;
-        PlayAudio(audioPath, vocalAudio, false);
-    }
-
     void UpdateBackgroundImage(string imageFileName)
     {
         string imagePath = Constants.BACKGROUND_PATH + imageFileName;
         UpdateImage(imagePath, backgroundImage);
         backgroundImage.DOFade(1, Constants.DURATION_TIME).From(0);
     }
-
-    void PlayBackgroundMusic(string musicFileName)
-    {
-        string musicPath = Constants.MUSIC_PATH + musicFileName;
-        PlayAudio(musicPath, backgroundMusic, true);
-    }
-
     void UpdatePageImage(string action, string imageFileName, Image pageImage)
     {
         if (action.StartsWith(Constants.APPEAR_AT))
@@ -290,7 +310,6 @@ public class VNManager : MonoBehaviour
             pageImage.DOFade(0, Constants.DURATION_TIME).OnComplete(() => pageImage.gameObject.SetActive(false));
         }
     }
-
     void UpdateCharacterImage(string action, string imageFileName, Image characterImage, string x)
     {
         if (action.StartsWith(Constants.APPEAR_AT))
@@ -324,7 +343,11 @@ public class VNManager : MonoBehaviour
             }
         }
     }
-
+    void UpdateButtonImage(string imageFileName, Button button)
+        {
+            string imagePath = Constants.BUTTON_PATH + imageFileName;
+            UpdateImage(imagePath, button.image);
+        }
     void UpdateImage(string imagePath, Image image)
     {
         Sprite sprite = Resources.Load<Sprite>(imagePath);
@@ -338,30 +361,19 @@ public class VNManager : MonoBehaviour
             Debug.LogError(Constants.IMAGE_LOAD_FAILED + imagePath);
         }
     }
-
-    void PlayAudio(string audioPath, AudioSource audioSource, bool isLoop)
-    {
-        AudioClip audioClip = Resources.Load<AudioClip>(audioPath);
-        if (audioClip != null)
-        {
-            audioSource.clip = audioClip;
-            audioSource.Play();
-            audioSource.loop = isLoop;
-        }
-        else
-        {
-            Debug.LogError(Constants.AUDIO_LOAD_FAILED + audioPath);
-        }
-    }
-
+    #endregion
+    #region Buttons
+    #region Bottom
     bool IsHittingBottomButtons()
     {
         return RectTransformUtility.RectangleContainsScreenPoint(
             bottomButtons.GetComponent<RectTransform>(),
             Input.mousePosition,
-            null
+            Camera.main
             );
     }
+    #endregion
+    #region Auto
     void OnAutoButtonClick()
     {
         isAutoPlay =  !isAutoPlay;
@@ -372,7 +384,19 @@ public class VNManager : MonoBehaviour
             StartCoroutine(StartAutoPlay());
         }
     }
-
+    private IEnumerator StartAutoPlay()
+        {
+            while (isAutoPlay)
+            {
+                if (!typewriterEffect.IsTyping())
+                {
+                    DisplayNextLine();
+                }
+                yield return new WaitForSeconds(Constants.DEFAULT_AUTO_WAITING_SECONDS);
+            }
+        }
+    #endregion
+    #region Skip
     void OnSkipButtonClick()
     {
         if (!isSkip && CanSkip())
@@ -385,90 +409,99 @@ public class VNManager : MonoBehaviour
             EndSkip();
         }
     }
-
+    bool CanSkip()
+        {
+            return currentLine < maxReachedLineIndex;
+        }
+    void StartSkip()
+        {
+            isSkip = true;
+            UpdateButtonImage(Constants.SKIP_ON, skipButton);
+            currentTypingSpeed = Constants.SKIP_MODE_TYPING_SPEED;
+            StartCoroutine(SkipToMaxReachedLine());
+        }
+    void EndSkip()
+        {
+            isSkip = false;
+            currentTypingSpeed = Constants.DEFAULT_TYPING_SPEED;
+            UpdateButtonImage(Constants.SKIP_OFF, skipButton);
+        }
+    private IEnumerator SkipToMaxReachedLine()
+        {
+            while (isSkip)
+            {
+                if (CanSkip())
+                {
+                    DisplayThisLine();
+                }
+                else
+                {
+                    EndSkip();
+                }
+                yield return new WaitForSeconds(Constants.DEFAULT_SKIP_WAITING_SECONDS);
+            }
+        }
+    #endregion
+    #region Save
     void OnSaveButtonClick()
     {
-        SaveLoadManager.Instance.ShowSaveLoadUI(true);
+        CloseUI();
+        Texture2D screenshot = screenShotter.CaptureScreenshot();
+        screenshotData = screenshot.EncodeToPNG();
+        SaveLoadManager.Instance.ShowSavePanel(SaveGame);
+        OpenUI();
     }
 
+    void SaveGame(int slotIndex)
+    {
+        var saveData = new SaveData
+        {
+            currentSpeakingContent = currentSpeakingContent,
+            screenshotData = screenshotData
+        };
+        string savePath = Path.Combine(saveFolderPath, slotIndex + Constants.SAVE_FILE_EXTENSION);
+        string json = JsonConvert.SerializeObject(saveData, Formatting.Indented);
+        File.WriteAllText(savePath, json);
+    }
+
+    public class SaveData
+    {
+        public string currentSpeakingContent;
+        public byte[] screenshotData;
+    }
+    #endregion
+    #region Load
     void OnLoadButtonClick()
     {
-        SaveLoadManager.Instance.ShowSaveLoadUI(false);
+        SaveLoadManager.Instance.ShowLoadPanel(LoadGame);
     }
-
-    bool CanSkip()
+    void LoadGame(int slotIndex)
     {
-        return currentLine < maxReachedLineIndex;
+        
     }
-
-    void StartSkip()
-    {
-        isSkip = true;
-        UpdateButtonImage(Constants.SKIP_ON, skipButton);
-        typewriterEffect.typingSpeed = Constants.SKIP_MODE_TYPING_SPEED;
-        StartCoroutine(SkipToMaxReachedLine());
-    }
-
-    void UpdateButtonImage(string imageFileName, Button button)
-    {
-        string imagePath = Constants.BUTTON_PATH + imageFileName;
-        UpdateImage(imagePath, button.image);
-    }
-
-    private IEnumerator StartAutoPlay()
-    {
-        while (isAutoPlay)
-        {
-            if (!typewriterEffect.IsTyping())
-            {
-                DisplayNextLine();
-            }
-            yield return new WaitForSeconds(Constants.DEFAULT_AUTO_WAITING_SECONDS);
-        }
-    }
-
-    private IEnumerator SkipToMaxReachedLine()
-    {
-        while (isSkip)
-        {
-            if (CanSkip())
-            {
-                DisplayThisLine();
-            }
-            else
-            {
-                EndSkip();
-            }
-            yield return new WaitForSeconds(Constants.DEFAULT_SKIP_WAITING_SECONDS);
-        }
-    }
-
-    void EndSkip()
-    {
-        isSkip = false;
-        typewriterEffect.typingSpeed = Constants.DEFAULT_TYPING_SPEED;
-        UpdateButtonImage(Constants.SKIP_OFF, skipButton);
-    }
+    #region Home
     void OnHomeButtonClick()
     {
         gamePanel.SetActive(false);
         MenuManager.Instance.menuPanel.SetActive(true);
     }
-
+    #endregion
+    #region Close
     void OnCloseButtonClick()
     {
         CloseUI();
     }
-
     void OpenUI()
     {
         dialogueBox.SetActive(true);
         bottomButtons.SetActive(true);
     }
-
     void CloseUI()
     {
         dialogueBox.SetActive(false);
         bottomButtons.SetActive(false);
     }
+    #endregion
+    #endregion
+    #endregion
 }

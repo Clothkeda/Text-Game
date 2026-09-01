@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,6 +17,7 @@ public class SaveLoadManager : MonoBehaviour
     private int currentPage = Constants.DEFAULT_START_INDEX;
     private readonly int slotsPerPage = Constants.SLOTS_PER_PAGE;
     private readonly int totalSlots = Constants.TOTAL_SLOTS;
+    private System.Action<int> currentAction;
     
     public static SaveLoadManager Instance { get; private set; }
 
@@ -29,7 +32,6 @@ public class SaveLoadManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
-    
     void Start()
     {
         prevPageButton.onClick.AddListener(PrevPage);
@@ -38,30 +40,31 @@ public class SaveLoadManager : MonoBehaviour
         saveLoadPanel.SetActive(false);
     }
 
-    public void ShowSaveLoadUI(bool save)
+    public void ShowSavePanel(System.Action<int> action)
     {
-        isSave = save;
-        panelTitle.text = isSave ? Constants.SAVE_GAME : Constants.LOAD_GAME;
-        UpdateSaveLoadUI();
+        isSave = true;
+        panelTitle.text = Constants.SAVE_GAME;
+        currentAction = action;
+        UpdateUI();
         saveLoadPanel.SetActive(true);
-        LoadStorylineAndScreenshots();
     }
-
-    private void UpdateSaveLoadUI()
+    public void ShowLoadPanel(System.Action<int> action)
     {
-        for (int i = 0; i < slotsPerPage; i++)
+        isSave = false;
+        panelTitle.text = Constants.LOAD_GAME;
+        currentAction = action;
+        UpdateUI();
+        saveLoadPanel.SetActive(true);
+    }
+    private void UpdateUI()
+    {
+        for (int i = 0; i < slotsPerPage; ++i)
         {
             int slotIndex = currentPage * slotsPerPage + i;
             if (slotIndex < totalSlots)
             {
-                saveLoadButtons[i].gameObject.SetActive(true);
-                saveLoadButtons[i].interactable = true;
-
-                var slotText = (slotIndex + 1) + Constants.COLON + Constants.EMPLY_SLOT;
-                var textComponents = saveLoadButtons[i].GetComponentsInChildren<TextMeshProUGUI>();
-                textComponents[0].text = null;
-                textComponents[1].text = slotText;
-                saveLoadButtons[i].GetComponentInChildren<RawImage>().texture = null;
+                UpdateSaveLoadButtons(saveLoadButtons[i], slotIndex);
+                LoadStorylineAndScreenshots(saveLoadButtons[i], slotIndex);
             }
             else
             {
@@ -70,13 +73,46 @@ public class SaveLoadManager : MonoBehaviour
         }
     }
 
+    private void UpdateSaveLoadButtons(Button button, int index)
+    {
+        button.gameObject.SetActive(true);
+        button.interactable = true;
+
+        var savePath = GenerateDataPath(index);
+        var fileExists = File.Exists(savePath);
+
+        if (!isSave && !fileExists)
+        {
+            button.interactable = false;
+        }
+        
+        var textComponents = button.GetComponentsInChildren<TextMeshProUGUI>();
+        textComponents[0].text = null;
+        textComponents[1].text = (index + 1) + Constants.COLON + Constants.EMPLY_SLOT;
+        button.GetComponentInChildren<RawImage>().texture = null;
+        
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(() => OnButtonClick(button, index));
+    }
+
+    private void OnButtonClick(Button button, int index)
+    {
+        currentAction(index);
+        if (isSave)
+        {
+            LoadStorylineAndScreenshots(button, index);
+        }
+        else
+        {
+            
+        }
+    }
     private void PrevPage()
     {
         if (currentPage > 0)
         {
             currentPage--;
-            UpdateSaveLoadUI();
-            LoadStorylineAndScreenshots();
+            UpdateUI();
         }
     }
 
@@ -85,24 +121,39 @@ public class SaveLoadManager : MonoBehaviour
         if ((currentPage + 1) * slotsPerPage < totalSlots)
         {
             currentPage++;
-            UpdateSaveLoadUI();
-            LoadStorylineAndScreenshots();
+            UpdateUI();
         }
     }
-
     private void GoBack()
     {
         saveLoadPanel.SetActive(false);
     }
 
-    private void LoadStorylineAndScreenshots()
+    private void LoadStorylineAndScreenshots(Button button, int index)
     {
-        
+        var savePath = GenerateDataPath(index);
+        if (File.Exists(savePath))
+        {
+            string json = File.ReadAllText(savePath);
+            var saveData = JsonConvert.DeserializeObject<VNManager.SaveData>(json);
+            if (saveData.screenshotData != null)
+            {
+                Texture2D screenshot = new Texture2D(2, 2);
+                screenshot.LoadImage(saveData.screenshotData);
+                button.GetComponentInChildren<RawImage>().texture = screenshot;
+            }
+
+            if (saveData.currentSpeakingContent != null)
+            {
+                var textComponents = button.GetComponentsInChildren<TextMeshProUGUI>();
+                textComponents[0].text = saveData.currentSpeakingContent;
+                textComponents[1].text = File.GetLastWriteTime(savePath).ToString("G");
+            }
+        }
     }
-    
-    // Update is called once per frame
-    void Update()
+
+    private string GenerateDataPath(int index)
     {
-        
+        return Path.Combine(Application.persistentDataPath, Constants.SAVE_FILE_PATH, index + Constants.SAVE_FILE_EXTENSION);
     }
 }
