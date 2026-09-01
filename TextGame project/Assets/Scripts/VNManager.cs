@@ -36,7 +36,7 @@ public class VNManager : MonoBehaviour
     public Button saveButton;
     public Button loadButton;
     public Button historyButton; 
-    public Button settingsButton; 
+    public Button settingButton; 
     public Button homeButton;
     public Button closeButton;
 
@@ -59,6 +59,7 @@ public class VNManager : MonoBehaviour
     private bool isLoad = false;
     private int maxReachedLineIndex = 0;
     private Dictionary<string, int> globalMaxReachedLineIndices = new Dictionary<string, int>();
+    private LinkedList<string> historyRecords = new LinkedList<string>();
     public static VNManager Instance { get; private set; }
     #endregion
     #region Lifecycle
@@ -82,15 +83,35 @@ public class VNManager : MonoBehaviour
     {
         if (!MenuManager.Instance.menuPanel.activeSelf &&
             !SaveLoadManager.Instance.saveLoadPanel.activeSelf &&
-            gamePanel.activeInHierarchy &&  Input.GetMouseButtonDown(0))
+            !HistoryManager.Instance.historyScrollView.activeSelf &&
+            gamePanel.activeSelf)
         {
-            if (!dialogueBox.activeSelf)
+            if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Space))
             {
-                OpenUI();
+                if (!dialogueBox.activeSelf)
+                {
+                    OpenUI();
+                }
+                else if (!IsHittingBottomButtons())
+                {
+                    DisplayNextLine();
+                }
             }
-            else if (!IsHittingBottomButtons())
+            if (Input.GetKeyDown(KeyCode.Escape))
             {
-                DisplayNextLine();
+                if (dialogueBox.activeSelf)
+                {
+                    CloseUI();
+                }
+                else
+                {
+                    OpenUI();
+                }
+            }
+            if (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))
+            {
+                Debug.Log("按下Ctrl键");
+                CtrlSkip();
             }
         }
     }
@@ -110,7 +131,8 @@ public class VNManager : MonoBehaviour
         skipButton.onClick.AddListener(OnSkipButtonClick);
         saveButton.onClick.AddListener(OnSaveButtonClick);
         loadButton.onClick.AddListener(OnLoadButtonClick);
-        
+        historyButton.onClick.AddListener(OnHistoryButtonClick);
+        //settingButton.onClick.AddListener(OnSettingButtonClick);
         homeButton.onClick.AddListener(OnHomeButtonClick);
         homeButton.onClick.AddListener(OnCloseButtonClick);
     }
@@ -210,6 +232,8 @@ public class VNManager : MonoBehaviour
         currentSpeakingContent = data.speakingContent;
         typewriterEffect.StartTyping(currentSpeakingContent, currentTypingSpeed);
         
+        RecordHistory(speakerName.text, currentSpeakingContent);
+        
         if (NotNullNorEmpty(data.avatarImageFileName))
         {
             UpdateAvatarImage(data.avatarImageFileName);
@@ -248,7 +272,15 @@ public class VNManager : MonoBehaviour
         }
         currentLine++;
     }
-
+    void RecordHistory(string speaker, string content)
+    {
+        string historyRecord = speaker + Constants.COLON + content;
+        if (historyRecords.Count >= Constants.MAX_LENGTH)
+        {
+            historyRecords.RemoveFirst();
+        }
+        historyRecords.AddLast(historyRecord);
+    }
     void RecoverLastBackgroundAndCharacter()
     {
         var data = storyData[currentLine];
@@ -465,6 +497,20 @@ public class VNManager : MonoBehaviour
             currentTypingSpeed = Constants.DEFAULT_TYPING_SPEED;
             UpdateButtonImage(Constants.SKIP_OFF, skipButton);
         }
+
+    void CtrlSkip()
+    {
+        currentTypingSpeed = Constants.SKIP_MODE_TYPING_SPEED;
+        StartCoroutine(SkipWhilePressingCtrl());
+    }
+    private IEnumerator SkipWhilePressingCtrl()
+    {
+        while (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl))
+        {
+            DisplayNextLine();
+            yield return new WaitForSeconds(Constants.DEFAULT_SKIP_WAITING_SECONDS);
+        }
+    }
     private IEnumerator SkipToMaxReachedLine()
         {
             while (isSkip)
@@ -498,7 +544,8 @@ public class VNManager : MonoBehaviour
             savedStoryFileName = currentStoryFileName,
             savedLine = currentLine,
             savedSpeakingContent = currentSpeakingContent,
-            savedScreenshotData = screenshotData
+            savedScreenshotData = screenshotData,
+            savedHistoryRecords = historyRecords
         };
         string savePath = Path.Combine(saveFolderPath, slotIndex + Constants.SAVE_FILE_EXTENSION);
         string json = JsonConvert.SerializeObject(saveData, Formatting.Indented);
@@ -511,6 +558,7 @@ public class VNManager : MonoBehaviour
         public int savedLine;
         public string savedSpeakingContent;
         public byte[] savedScreenshotData;
+        public LinkedList<string> savedHistoryRecords;
     }
     #endregion
     #region Load
@@ -530,6 +578,8 @@ public class VNManager : MonoBehaviour
             isLoad = true;
             string json = File.ReadAllText(savePath);
             var saveData = JsonConvert.DeserializeObject<SaveData>(json);
+            historyRecords = saveData.savedHistoryRecords;
+            historyRecords.RemoveLast();
             var lineNumber = saveData.savedLine - 1;
             InitializeAndLoadStory(saveData.savedStoryFileName, lineNumber);
         }
@@ -557,6 +607,12 @@ public class VNManager : MonoBehaviour
         bottomButtons.SetActive(false);
     }
     #endregion
+    #endregion
+    #region History
+    void OnHistoryButtonClick()
+    {
+        HistoryManager.Instance.ShowHistory(historyRecords);
+    }
     #endregion
     #endregion
 }
