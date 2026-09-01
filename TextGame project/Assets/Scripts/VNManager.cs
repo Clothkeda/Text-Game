@@ -1,5 +1,6 @@
 using DG.Tweening;
 using Newtonsoft.Json;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -41,6 +42,7 @@ public class VNManager : MonoBehaviour
 
     private readonly string storyPath = Constants.STORY_PATH;
     private readonly string defaultStoryFileName = Constants.DEFAULT_STORY_FILE_NAME;
+    private readonly int defaultStartLine = Constants.DEFAULT_START_LINE;
     private readonly string excelFileExtension = Constants.EXCEL_FILE_EXTENSION;
 
     private string saveFolderPath;
@@ -54,6 +56,7 @@ public class VNManager : MonoBehaviour
     
     private bool isAutoPlay = false;
     private bool isSkip = false;
+    private bool isLoad = false;
     private int maxReachedLineIndex = 0;
     private Dictionary<string, int> globalMaxReachedLineIndices = new Dictionary<string, int>();
     public static VNManager Instance { get; private set; }
@@ -113,17 +116,22 @@ public class VNManager : MonoBehaviour
     }
     public void StartGame()
     {
-        InitializeAndLoadStory(defaultStoryFileName);
+        InitializeAndLoadStory(defaultStoryFileName, defaultStartLine);
     }
-    void InitializeAndLoadStory(string fileName)
+    void InitializeAndLoadStory(string fileName, int lineNumber)
     {
-        Initialize();
+        Initialize(lineNumber);
         LoadStoryFromFile(fileName);
+        if (isLoad)
+        {
+            RecoverLastBackgroundAndCharacter();
+            isLoad = false;
+        }
         DisplayNextLine();
     }
-    void Initialize()
+    void Initialize(int line)
     {
-        currentLine = Constants.DEFAULT_START_LINE;
+        currentLine = line;
         //pageImage.gameObject.SetActive(false);
         backgroundImage.gameObject.SetActive(false);
         backgroundMusic.gameObject.SetActive(false);
@@ -201,6 +209,7 @@ public class VNManager : MonoBehaviour
         speakerName.text = data.speakerName;
         currentSpeakingContent = data.speakingContent;
         typewriterEffect.StartTyping(currentSpeakingContent, currentTypingSpeed);
+        
         if (NotNullNorEmpty(data.avatarImageFileName))
         {
             UpdateAvatarImage(data.avatarImageFileName);
@@ -240,6 +249,36 @@ public class VNManager : MonoBehaviour
         currentLine++;
     }
 
+    void RecoverLastBackgroundAndCharacter()
+    {
+        var data = storyData[currentLine];
+        if (NotNullNorEmpty(data.lastBackgroundImage))
+        {
+            UpdateBackgroundImage(data.lastBackgroundImage);
+        }
+
+        if (NotNullNorEmpty(data.lastBackgroundMusic))
+        {
+            PlayBackgroundMusic(data.lastBackgroundMusic);
+        }
+
+        if (data.character1Action != Constants.APPEAR_AT
+            && NotNullNorEmpty(data.character1ImageFileName))
+        {
+            UpdateCharacterImage(Constants.APPEAR_AT, data.character1ImageFileName, characterImage1, data.coordinateX1);
+        }
+        if (data.character2Action != Constants.APPEAR_AT
+            && NotNullNorEmpty(data.character2ImageFileName))
+        {
+            UpdateCharacterImage(Constants.APPEAR_AT, data.character2ImageFileName, characterImage2, data.coordinateX2);
+        }
+        if (data.character3Action != Constants.APPEAR_AT
+            && NotNullNorEmpty(data.character3ImageFileName))
+        {
+            UpdateCharacterImage(Constants.APPEAR_AT, data.character3ImageFileName, characterImage3, data.coordinateX3);
+        }
+    }
+
     bool NotNullNorEmpty(string str)
     {
         return !string.IsNullOrEmpty(str);
@@ -253,9 +292,9 @@ public class VNManager : MonoBehaviour
         choiceButton2.onClick.RemoveAllListeners();
         choicePanel.SetActive(true);
         choiceButton1.GetComponentInChildren<TextMeshProUGUI>().text = data.speakingContent;
-        choiceButton1.onClick.AddListener(() => InitializeAndLoadStory(data.avatarImageFileName));
+        choiceButton1.onClick.AddListener(() => InitializeAndLoadStory(data.avatarImageFileName, defaultStartLine));
         choiceButton2.GetComponentInChildren<TextMeshProUGUI>().text = data.vocalAudioFileName;
-        choiceButton2.onClick.AddListener(() => InitializeAndLoadStory(data.backgroundImageFileName));
+        choiceButton2.onClick.AddListener(() => InitializeAndLoadStory(data.backgroundImageFileName, defaultStartLine));
     }
     #endregion
     #region Audios
@@ -320,7 +359,7 @@ public class VNManager : MonoBehaviour
                 UpdateImage(imagePath, characterImage);
                 var newPosition = new Vector2(float.Parse(x), characterImage.rectTransform.anchoredPosition.y);
                 characterImage.rectTransform.anchoredPosition = newPosition;
-                characterImage.DOFade(1, Constants.DURATION_TIME).From(0);
+                characterImage.DOFade(1, (isLoad ? 0 : Constants.DURATION_TIME) ).From(0);
             }
             else
             {
@@ -456,8 +495,10 @@ public class VNManager : MonoBehaviour
     {
         var saveData = new SaveData
         {
-            currentSpeakingContent = currentSpeakingContent,
-            screenshotData = screenshotData
+            savedStoryFileName = currentStoryFileName,
+            savedLine = currentLine,
+            savedSpeakingContent = currentSpeakingContent,
+            savedScreenshotData = screenshotData
         };
         string savePath = Path.Combine(saveFolderPath, slotIndex + Constants.SAVE_FILE_EXTENSION);
         string json = JsonConvert.SerializeObject(saveData, Formatting.Indented);
@@ -466,18 +507,32 @@ public class VNManager : MonoBehaviour
 
     public class SaveData
     {
-        public string currentSpeakingContent;
-        public byte[] screenshotData;
+        public string savedStoryFileName;
+        public int savedLine;
+        public string savedSpeakingContent;
+        public byte[] savedScreenshotData;
     }
     #endregion
     #region Load
     void OnLoadButtonClick()
     {
-        SaveLoadManager.Instance.ShowLoadPanel(LoadGame);
+        ShowLoadPanel(null);
+    }
+    public void ShowLoadPanel(Action action)
+    {
+        SaveLoadManager.Instance.ShowLoadPanel(LoadGame, action);
     }
     void LoadGame(int slotIndex)
     {
-        
+        string savePath = Path.Combine(saveFolderPath, slotIndex + Constants.SAVE_FILE_EXTENSION);
+        if (File.Exists(savePath))
+        {
+            isLoad = true;
+            string json = File.ReadAllText(savePath);
+            var saveData = JsonConvert.DeserializeObject<SaveData>(json);
+            var lineNumber = saveData.savedLine - 1;
+            InitializeAndLoadStory(saveData.savedStoryFileName, lineNumber);
+        }
     }
     #region Home
     void OnHomeButtonClick()

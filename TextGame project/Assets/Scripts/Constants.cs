@@ -14,7 +14,7 @@ public class Constants
     public static string PAGE_PATH = "image/page/";
     public static string IMAGE_LOAD_FAILED = "Failed to load image";
     
-    public static float DEFAULT_TYPING_SPEED = 0.5f;
+    public static float DEFAULT_TYPING_SPEED = 0.05f;
     public static float SKIP_MODE_TYPING_SPEED = 0.01f;
     
     public static string AUTO_ON = "autoplayon";

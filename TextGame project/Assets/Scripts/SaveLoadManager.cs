@@ -18,6 +18,7 @@ public class SaveLoadManager : MonoBehaviour
     private readonly int slotsPerPage = Constants.SLOTS_PER_PAGE;
     private readonly int totalSlots = Constants.TOTAL_SLOTS;
     private System.Action<int> currentAction;
+    private System.Action menuAction;
     
     public static SaveLoadManager Instance { get; private set; }
 
@@ -48,11 +49,12 @@ public class SaveLoadManager : MonoBehaviour
         UpdateUI();
         saveLoadPanel.SetActive(true);
     }
-    public void ShowLoadPanel(System.Action<int> action)
+    public void ShowLoadPanel(System.Action<int> action, System.Action menuAction)
     {
         isSave = false;
         panelTitle.text = Constants.LOAD_GAME;
         currentAction = action;
+        this.menuAction = menuAction;
         UpdateUI();
         saveLoadPanel.SetActive(true);
     }
@@ -97,14 +99,15 @@ public class SaveLoadManager : MonoBehaviour
 
     private void OnButtonClick(Button button, int index)
     {
-        currentAction(index);
+        menuAction?.Invoke();
+        currentAction?.Invoke(index);
         if (isSave)
         {
             LoadStorylineAndScreenshots(button, index);
         }
         else
         {
-            
+            GoBack();
         }
     }
     private void PrevPage()
@@ -136,17 +139,17 @@ public class SaveLoadManager : MonoBehaviour
         {
             string json = File.ReadAllText(savePath);
             var saveData = JsonConvert.DeserializeObject<VNManager.SaveData>(json);
-            if (saveData.screenshotData != null)
+            if (saveData.savedScreenshotData != null)
             {
                 Texture2D screenshot = new Texture2D(2, 2);
-                screenshot.LoadImage(saveData.screenshotData);
+                screenshot.LoadImage(saveData.savedScreenshotData);
                 button.GetComponentInChildren<RawImage>().texture = screenshot;
             }
 
-            if (saveData.currentSpeakingContent != null)
+            if (saveData.savedSpeakingContent != null)
             {
                 var textComponents = button.GetComponentsInChildren<TextMeshProUGUI>();
-                textComponents[0].text = saveData.currentSpeakingContent;
+                textComponents[0].text = saveData.savedSpeakingContent;
                 textComponents[1].text = File.GetLastWriteTime(savePath).ToString("G");
             }
         }

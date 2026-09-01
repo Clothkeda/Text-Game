@@ -24,6 +24,11 @@ public class ExcelReader
         public string character3Action;
         public string coordinateX3;
         public string character3ImageFileName;
+        public string lastBackgroundImage;
+        public string lastBackgroundMusic;
+        public string lastCoordinateX1;
+        public string lastCoordinateX2;
+        public string lastCoordinateX3;
 
     }
 
@@ -57,6 +62,11 @@ public class ExcelReader
                         data.character3Action = reader.IsDBNull(14) ? string.Empty : reader.GetValue(14).ToString();
                         data.coordinateX3 = reader.IsDBNull(15) ? string.Empty : reader.GetValue(15).ToString();
                         data.character3ImageFileName = reader.IsDBNull(16) ? string.Empty : reader.GetValue(16).ToString();
+                        data.lastBackgroundImage = reader.IsDBNull(17) ? string.Empty : reader.GetValue(17).ToString();
+                        data.lastBackgroundMusic = reader.IsDBNull(18) ? string.Empty : reader.GetValue(18).ToString();
+                        data.lastCoordinateX1 = reader.IsDBNull(19) ? string.Empty : reader.GetValue(19).ToString();
+                        data.lastCoordinateX2 = reader.IsDBNull(20) ? string.Empty : reader.GetValue(20).ToString();
+                        data.lastCoordinateX3 = reader.IsDBNull(21) ? string.Empty : reader.GetValue(21).ToString();
                         excelData.Add(data);
                     }
                 }while (reader.NextResult());
