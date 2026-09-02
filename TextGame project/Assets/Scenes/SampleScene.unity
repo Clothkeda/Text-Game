@@ -10480,7 +10480,7 @@ MonoBehaviour:
   saveButton: {fileID: 787227650}
   loadButton: {fileID: 1836283809}
   historyButton: {fileID: 989175692}
-  settingButton: {fileID: 0}
+  settingButton: {fileID: 1850864663}
   homeButton: {fileID: 212651310}
   closeButton: {fileID: 1121918066}
 --- !u!4 &1845535350

@@ -204,17 +204,14 @@ public class VNManager : MonoBehaviour
                 isAutoPlay = false;
                 UpdateButtonImage(Constants.AUTO_OFF, autoButton);
             }
-
             if (storyData[currentLine].speakerName == Constants.END_OF_STORY)
             {
                 Debug.Log(Constants.END_OF_STORY);
             }
-
             if (storyData[currentLine].speakerName == Constants.CHOICE)
             {
                 ShowChoices();
             }
-
             if (storyData[currentLine].speakerName == Constants.GOTO)
             {
                 InitializeAndLoadStory(storyData[currentLine].speakingContent, defaultStartLine);
@@ -339,6 +336,7 @@ public class VNManager : MonoBehaviour
         choiceButton2.GetComponentInChildren<TextMeshProUGUI>().text = data.vocalAudioFileName;
         choiceButton2.onClick.AddListener(() => InitializeAndLoadStory(data.backgroundImageFileName, defaultStartLine));
     }
+    
     #endregion
     #region Audios
     void PlayVocalAudio(string audioFileName)
