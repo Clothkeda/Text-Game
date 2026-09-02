@@ -137,9 +137,9 @@ public class VNManager : MonoBehaviour
         homeButton.onClick.AddListener(OnHomeButtonClick);
         homeButton.onClick.AddListener(OnCloseButtonClick);
     }
-    public void StartGame()
+    public void StartGame(string fileName, int startLine)
     {
-        InitializeAndLoadStory(defaultStoryFileName, defaultStartLine);
+        InitializeAndLoadStory(fileName, startLine);
     }
     void InitializeAndLoadStory(string fileName, int lineNumber)
     {
@@ -214,6 +214,16 @@ public class VNManager : MonoBehaviour
             {
                 ShowChoices();
             }
+
+            if (storyData[currentLine].speakerName == Constants.GOTO)
+            {
+                InitializeAndLoadStory(storyData[currentLine].speakingContent, defaultStartLine);
+            }
+
+            //if (storyData[currentLine].speakerName == Constants.GAME)
+            //{
+            //    LoadMinGame();
+            //}
             return;
         }
         if (typewriterEffect.IsTyping())
@@ -392,7 +402,13 @@ public class VNManager : MonoBehaviour
                 UpdateImage(imagePath, characterImage);
                 var newPosition = new Vector2(float.Parse(x), characterImage.rectTransform.anchoredPosition.y);
                 characterImage.rectTransform.anchoredPosition = newPosition;
-                characterImage.DOFade(1, (isLoad ? 0 : Constants.DURATION_TIME) ).From(0);
+                
+                var duration = Constants.DURATION_TIME;
+                if (isLoad || action == Constants.APPEAR_AT_INSTANTLY)
+                {
+                    duration = 0;
+                }
+                characterImage.DOFade(1, duration).From(0);
             }
             else
             {

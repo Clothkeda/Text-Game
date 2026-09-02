@@ -89,7 +89,7 @@ public class SettingManager : MonoBehaviour
 
     void UpdateToggleLabel(bool isFullscreen)
     {
-        toggleLabel.text = isFullscreen ? "Full Screen" : "Windowed";
+        toggleLabel.text = isFullscreen ? "全屏模式" : "窗口模式";
     }
 
     void SetResolution(int index)

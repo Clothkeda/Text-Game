@@ -33,6 +33,7 @@ public class Constants
     public static string END_OF_STORY = "End of story";
     public static string CHOICE = "choice";
 
+    public static string APPEAR_AT_INSTANTLY = "appearAtInstantly";
     public static string APPEAR_AT = "appearAt";
     public static string DISAPPEAR = "disappear";
     public static string MOVE_TO = "moveTo";
@@ -53,4 +54,7 @@ public class Constants
 
     public static string X = "x";
     public static int MAX_LENGTH = 50;
+
+    public static string GOTO = "goto";
+    public static string NEW_STORY_FILE_NAME = "1";
 }
