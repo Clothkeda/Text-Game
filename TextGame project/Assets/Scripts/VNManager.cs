@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class VNManager : MonoBehaviour
@@ -40,6 +41,8 @@ public class VNManager : MonoBehaviour
     public Button homeButton;
     public Button closeButton;
 
+    public string WinStoryFileName;
+
     private readonly string storyPath = Constants.STORY_PATH;
     private readonly string defaultStoryFileName = Constants.DEFAULT_STORY_FILE_NAME;
     private readonly int defaultStartLine = Constants.DEFAULT_START_LINE;
@@ -69,6 +72,7 @@ public class VNManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
+            DontDestroyOnLoad(this.gameObject);
         }
         else
         {
@@ -252,7 +256,13 @@ public class VNManager : MonoBehaviour
                 isAutoPlay = false;
                 UpdateButtonImage(Constants.AUTO_OFF, autoButton);
             }
+            OnHomeButtonClick();
             return;
+        }
+
+        if (data.speakerName == Constants.GAME)
+        {
+            LoadMiniGame();
         }
         // =================================================
 
@@ -371,6 +381,16 @@ public class VNManager : MonoBehaviour
         choiceButton1.onClick.AddListener(() => InitializeAndLoadStory(data.avatarImageFileName, defaultStartLine));
         choiceButton2.GetComponentInChildren<TextMeshProUGUI>().text = data.vocalAudioFileName;
         choiceButton2.onClick.AddListener(() => InitializeAndLoadStory(data.backgroundImageFileName, defaultStartLine));
+    }
+    #endregion
+
+    #region MiniGame
+    void LoadMiniGame()
+    {
+        var data = storyData[currentLine];
+        WinStoryFileName = data.avatarImageFileName;
+        OnSaveButtonClick();
+        SceneManager.LoadScene(data.speakingContent);
     }
     #endregion
 
@@ -631,6 +651,7 @@ public class VNManager : MonoBehaviour
     #endregion
 
     #region Load
+    
     void OnLoadButtonClick()
     {
         ShowLoadPanel(null);

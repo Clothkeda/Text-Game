@@ -32,6 +32,7 @@ public class Constants
     public static string NO_DATA_FOUND = "No data found";
     public static string END_OF_STORY = "End of story";
     public static string CHOICE = "choice";
+    public static string GAME = "game";
 
     public static string APPEAR_AT_INSTANTLY = "appearAtInstantly";
     public static string APPEAR_AT = "appearAt";
