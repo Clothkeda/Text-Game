@@ -1,13 +1,25 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using System.Collections.Generic;
 
 public class PlayerController : MonoBehaviour
 {
     public Animator ani;
     public Rigidbody2D rBody;
-    // 保存上一帧有效移动方向
     public float lastH;
     public float lastV;
-    
+
+    [Header("交互设置")]
+    public bool isInteracting = false;
+
+    [Header("游戏状态")]
+    public bool isGameActive = false;
+
+    [Header("通关设置")]
+    public string gameSceneName = "Game";
+
+    private HashSet<string> interactedObjects = new HashSet<string>();
+
     void Start()
     {
         ani = GetComponent<Animator>();
@@ -16,11 +28,23 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (isInteracting && VNManager.Instance != null
+                       && !VNManager.Instance.dialogueBox.activeSelf)
+        {
+            isInteracting = false;
+        }
+
+        if (isInteracting)
+        {
+            if (rBody != null) rBody.linearVelocity = Vector2.zero;
+            if (ani != null) ani.SetFloat("Speed", 0);
+            return;
+        }
+
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
         Vector2 dir = Vector2.zero;
 
-        // 单轴互斥逻辑：左右优先
         if (horizontal != 0)
         {
             dir = new Vector2(horizontal, 0);
@@ -33,11 +57,48 @@ public class PlayerController : MonoBehaviour
             lastH = 0;
             lastV = vertical;
         }
-        
-        ani.SetFloat("Horizontal", lastH);
-        ani.SetFloat("Vertical", lastV);
-        ani.SetFloat("Speed", dir.magnitude);
-        
-        rBody.linearVelocity = dir * 2f;
+
+        if (ani != null)
+        {
+            ani.SetFloat("Horizontal", lastH);
+            ani.SetFloat("Vertical", lastV);
+            ani.SetFloat("Speed", dir.magnitude);
+        }
+
+        if (rBody != null)
+        {
+            rBody.linearVelocity = dir * 2f;
+        }
+    }
+
+    public void RegisterInteract(string objectKey)
+    {
+        if (!string.IsNullOrEmpty(objectKey))
+        {
+            interactedObjects.Add(objectKey);
+        }
+    }
+
+    public bool HasInteracted(string objectKey)
+    {
+        return interactedObjects.Contains(objectKey);
+    }
+
+    public bool HasInteractedAll(string[] requiredObjects)
+    {
+        foreach (string obj in requiredObjects)
+        {
+            if (!interactedObjects.Contains(obj))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void EndGame()
+    {
+        isGameActive = false;
+        SceneManager.LoadScene(gameSceneName);
     }
 }
