@@ -17,7 +17,7 @@ public class VNManager : MonoBehaviour
     public TextMeshProUGUI speakerName;
     public TypewriterEffect typewriterEffect;
     public ScreenShotter screenShotter;
-    
+
     public Image avatarImage;
     public AudioSource vocalAudio;
     public Image backgroundImage;
@@ -26,22 +26,20 @@ public class VNManager : MonoBehaviour
     public Image characterImage1;
     public Image characterImage2;
     public Image characterImage3;
-    
+
     public GameObject choicePanel;
     public Button choiceButton1;
     public Button choiceButton2;
-    
+
     public GameObject bottomButtons;
     public Button autoButton;
     public Button skipButton;
     public Button saveButton;
     public Button loadButton;
-    public Button historyButton; 
-    public Button settingButton; 
+    public Button historyButton;
+    public Button settingButton;
     public Button homeButton;
     public Button closeButton;
-
-    public string WinStoryFileName;
 
     private readonly string storyPath = Constants.STORY_PATH;
     private readonly string defaultStoryFileName = Constants.DEFAULT_STORY_FILE_NAME;
@@ -51,12 +49,12 @@ public class VNManager : MonoBehaviour
     private string saveFolderPath;
     private byte[] screenshotData;
     private string currentSpeakingContent;
-    
+
     private List<ExcelReader.ExcelData> storyData;
     private int currentLine;
     private string currentStoryFileName;
     private float currentTypingSpeed = Constants.DEFAULT_TYPING_SPEED;
-    
+
     private bool isAutoPlay = false;
     private bool isSkip = false;
     private bool isLoad = false;
@@ -64,6 +62,12 @@ public class VNManager : MonoBehaviour
     private Dictionary<string, int> globalMaxReachedLineIndices = new Dictionary<string, int>();
     private LinkedList<string> historyRecords = new LinkedList<string>();
     public static VNManager Instance { get; private set; }
+
+    // ========== 新增：小游戏模式控制 ==========
+    public bool isMiniGameMode = false;
+    private string miniGameCachedStoryFile;
+    private int miniGameCachedLine;
+    // ========================================
     #endregion
 
     #region Lifecycle
@@ -88,11 +92,22 @@ public class VNManager : MonoBehaviour
 
     void Update()
     {
-        if (!MenuManager.Instance.menuPanel.activeSelf &&
-            !SaveLoadManager.Instance.saveLoadPanel.activeSelf &&
-            !HistoryManager.Instance.historyScrollView.activeSelf &&
-            !SettingManager.Instance.settingPanel.activeSelf &&
-            gamePanel.activeSelf)
+        // ========== 修改：小游戏模式直接跳过所有输入处理 ==========
+        if (isMiniGameMode) return;
+
+        bool uiPanelsClosed = true;
+
+        // ========== 修改：管理器安全校验，存在且未销毁才访问 ==========
+        if (MenuManager.Instance != null)
+            uiPanelsClosed &= !MenuManager.Instance.menuPanel.activeSelf;
+        if (SaveLoadManager.Instance != null)
+            uiPanelsClosed &= !SaveLoadManager.Instance.saveLoadPanel.activeSelf;
+        if (HistoryManager.Instance != null)
+            uiPanelsClosed &= !HistoryManager.Instance.historyScrollView.activeSelf;
+        if (SettingManager.Instance != null)
+            uiPanelsClosed &= !SettingManager.Instance.settingPanel.activeSelf;
+
+        if (uiPanelsClosed && gamePanel.activeSelf)
         {
             if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Space))
             {
@@ -169,14 +184,14 @@ public class VNManager : MonoBehaviour
         currentLine = line;
         backgroundImage.gameObject.SetActive(false);
         backgroundMusic.gameObject.SetActive(false);
-        
+
         avatarImage.gameObject.SetActive(false);
         vocalAudio.gameObject.SetActive(false);
-        
+
         characterImage1.gameObject.SetActive(false);
         characterImage2.gameObject.SetActive(false);
         characterImage3.gameObject.SetActive(false);
-        
+
         choicePanel.SetActive(false);
     }
 
@@ -263,6 +278,7 @@ public class VNManager : MonoBehaviour
         if (data.speakerName == Constants.GAME)
         {
             LoadMiniGame();
+            return;
         }
         // =================================================
 
@@ -278,46 +294,55 @@ public class VNManager : MonoBehaviour
 
     void DisplayThisLine()
     {
+        // ========== 修改：核心UI空校验，防止空引用报错 ==========
+        if (storyData == null || currentLine >= storyData.Count) return;
+        if (speakerName == null || typewriterEffect == null)
+        {
+            Debug.LogError("[VNManager] 对话核心UI组件缺失，请检查Inspector赋值");
+            currentLine++;
+            return;
+        }
+
         var data = storyData[currentLine];
         speakerName.text = data.speakerName;
         currentSpeakingContent = data.speakingContent;
         typewriterEffect.StartTyping(currentSpeakingContent, currentTypingSpeed);
-        
+
         RecordHistory(speakerName.text, currentSpeakingContent);
-        
-        if (NotNullNorEmpty(data.avatarImageFileName))
+
+        if (NotNullNorEmpty(data.avatarImageFileName) && avatarImage != null)
         {
             UpdateAvatarImage(data.avatarImageFileName);
         }
-        else
+        else if (avatarImage != null)
         {
             avatarImage.gameObject.SetActive(false);
         }
-        if (NotNullNorEmpty(data.vocalAudioFileName))
+        if (NotNullNorEmpty(data.vocalAudioFileName) && vocalAudio != null)
         {
             PlayVocalAudio(data.vocalAudioFileName);
         }
-        if (NotNullNorEmpty(data.backgroundImageFileName))
+        if (NotNullNorEmpty(data.backgroundImageFileName) && backgroundImage != null)
         {
             UpdateBackgroundImage(data.backgroundImageFileName);
         }
-        if (NotNullNorEmpty(data.backgroundMusicFileName))
+        if (NotNullNorEmpty(data.backgroundMusicFileName) && backgroundMusic != null)
         {
             PlayBackgroundMusic(data.backgroundMusicFileName);
         }
-        if (NotNullNorEmpty(data.pageAction))
+        if (NotNullNorEmpty(data.pageAction) && pageImage != null)
         {
             UpdatePageImage(data.pageAction, data.pageImageFileName, pageImage);
         }
-        if (NotNullNorEmpty(data.character1Action))
+        if (NotNullNorEmpty(data.character1Action) && characterImage1 != null)
         {
             UpdateCharacterImage(data.character1Action, data.character1ImageFileName, characterImage1, data.coordinateX1);
         }
-        if (NotNullNorEmpty(data.character2Action))
+        if (NotNullNorEmpty(data.character2Action) && characterImage2 != null)
         {
             UpdateCharacterImage(data.character2Action, data.character2ImageFileName, characterImage2, data.coordinateX2);
         }
-        if (NotNullNorEmpty(data.character3Action))
+        if (NotNullNorEmpty(data.character3Action) && characterImage3 != null)
         {
             UpdateCharacterImage(data.character3Action, data.character3ImageFileName, characterImage3, data.coordinateX3);
         }
@@ -337,28 +362,31 @@ public class VNManager : MonoBehaviour
     void RecoverLastBackgroundAndCharacter()
     {
         var data = storyData[currentLine];
-        if (NotNullNorEmpty(data.lastBackgroundImage))
+        if (NotNullNorEmpty(data.lastBackgroundImage) && backgroundImage != null)
         {
             UpdateBackgroundImage(data.lastBackgroundImage);
         }
 
-        if (NotNullNorEmpty(data.lastBackgroundMusic))
+        if (NotNullNorEmpty(data.lastBackgroundMusic) && backgroundMusic != null)
         {
             PlayBackgroundMusic(data.lastBackgroundMusic);
         }
 
         if (data.character1Action != Constants.APPEAR_AT
-            && NotNullNorEmpty(data.character1ImageFileName))
+            && NotNullNorEmpty(data.character1ImageFileName)
+            && characterImage1 != null)
         {
             UpdateCharacterImage(Constants.APPEAR_AT, data.character1ImageFileName, characterImage1, data.coordinateX1);
         }
         if (data.character2Action != Constants.APPEAR_AT
-            && NotNullNorEmpty(data.character2ImageFileName))
+            && NotNullNorEmpty(data.character2ImageFileName)
+            && characterImage2 != null)
         {
             UpdateCharacterImage(Constants.APPEAR_AT, data.character2ImageFileName, characterImage2, data.coordinateX2);
         }
         if (data.character3Action != Constants.APPEAR_AT
-            && NotNullNorEmpty(data.character3ImageFileName))
+            && NotNullNorEmpty(data.character3ImageFileName)
+            && characterImage3 != null)
         {
             UpdateCharacterImage(Constants.APPEAR_AT, data.character3ImageFileName, characterImage3, data.coordinateX3);
         }
@@ -388,9 +416,41 @@ public class VNManager : MonoBehaviour
     void LoadMiniGame()
     {
         var data = storyData[currentLine];
-        WinStoryFileName = data.avatarImageFileName;
-        OnSaveButtonClick();
+
+        // 缓存当前剧情进度，开启小游戏模式
+        miniGameCachedStoryFile = currentStoryFileName;
+        miniGameCachedLine = currentLine + 1;
+        isMiniGameMode = true;
+
+        // 停止自动播放、跳过等所有协程
+        if (isAutoPlay) OnAutoButtonClick();
+        if (isSkip) EndSkip();
+        StopAllCoroutines();
+
+        // ========== 新增：隐藏整套VN剧情UI，避免挡住小游戏 ==========
+        gamePanel.SetActive(false);
+        // 同时确保选择面板、对话框都关闭
+        choicePanel.SetActive(false);
+        dialogueBox.SetActive(false);
+        bottomButtons.SetActive(false);
+        // ========================================================
+
         SceneManager.LoadScene(data.speakingContent);
+    }
+    
+
+    // 保留原有方法兼容
+    public void BackTextGame(string fileName)
+    {
+        isMiniGameMode = false;
+    
+        // ========== 新增：恢复显示VN剧情UI ==========
+        gamePanel.SetActive(true);
+        OpenUI(); // 打开对话框和底部按钮
+        // ==========================================
+    
+        LoadStoryFromFile(fileName);
+        DisplayNextLine();
     }
     #endregion
 
@@ -410,7 +470,7 @@ public class VNManager : MonoBehaviour
     void PlayAudio(string audioPath, AudioSource audioSource, bool isLoop)
     {
         AudioClip audioClip = Resources.Load<AudioClip>(audioPath);
-        if (audioClip != null)
+        if (audioClip != null && audioSource != null)
         {
             audioSource.clip = audioClip;
             audioSource.gameObject.SetActive(true);
@@ -462,7 +522,7 @@ public class VNManager : MonoBehaviour
                 UpdateImage(imagePath, characterImage);
                 var newPosition = new Vector2(float.Parse(x), characterImage.rectTransform.anchoredPosition.y);
                 characterImage.rectTransform.anchoredPosition = newPosition;
-                
+
                 var duration = Constants.DURATION_TIME;
                 if (isLoad || action == Constants.APPEAR_AT_INSTANTLY)
                 {
@@ -494,6 +554,7 @@ public class VNManager : MonoBehaviour
 
     void UpdateButtonImage(string imageFileName, Button button)
     {
+        if (button == null) return;
         string imagePath = Constants.BUTTON_PATH + imageFileName;
         UpdateImage(imagePath, button.image);
     }
@@ -501,7 +562,7 @@ public class VNManager : MonoBehaviour
     void UpdateImage(string imagePath, Image image)
     {
         Sprite sprite = Resources.Load<Sprite>(imagePath);
-        if (sprite != null)
+        if (sprite != null && image != null)
         {
             image.sprite = sprite;
             image.gameObject.SetActive(true);
@@ -517,6 +578,7 @@ public class VNManager : MonoBehaviour
     #region Bottom
     bool IsHittingBottomButtons()
     {
+        if (bottomButtons == null) return false;
         return RectTransformUtility.RectangleContainsScreenPoint(
             bottomButtons.GetComponent<RectTransform>(),
             Input.mousePosition,
@@ -621,7 +683,8 @@ public class VNManager : MonoBehaviour
         CloseUI();
         Texture2D screenshot = screenShotter.CaptureScreenshot();
         screenshotData = screenshot.EncodeToPNG();
-        SaveLoadManager.Instance.ShowSavePanel(SaveGame);
+        if (SaveLoadManager.Instance != null)
+            SaveLoadManager.Instance.ShowSavePanel(SaveGame);
         OpenUI();
     }
 
@@ -651,7 +714,7 @@ public class VNManager : MonoBehaviour
     #endregion
 
     #region Load
-    
+
     void OnLoadButtonClick()
     {
         ShowLoadPanel(null);
@@ -659,7 +722,8 @@ public class VNManager : MonoBehaviour
 
     public void ShowLoadPanel(Action action)
     {
-        SaveLoadManager.Instance.ShowLoadPanel(LoadGame, action);
+        if (SaveLoadManager.Instance != null)
+            SaveLoadManager.Instance.ShowLoadPanel(LoadGame, action);
     }
 
     void LoadGame(int slotIndex)
@@ -682,7 +746,8 @@ public class VNManager : MonoBehaviour
     void OnHomeButtonClick()
     {
         gamePanel.SetActive(false);
-        MenuManager.Instance.menuPanel.SetActive(true);
+        if (MenuManager.Instance != null)
+            MenuManager.Instance.menuPanel.SetActive(true);
     }
     #endregion
 
@@ -709,14 +774,16 @@ public class VNManager : MonoBehaviour
     #region History
     void OnHistoryButtonClick()
     {
-        HistoryManager.Instance.ShowHistory(historyRecords);
+        if (HistoryManager.Instance != null)
+            HistoryManager.Instance.ShowHistory(historyRecords);
     }
     #endregion
 
     #region Setting
     void OnSettingButtonClick()
     {
-        SettingManager.Instance.ShowSettingPanel();
+        if (SettingManager.Instance != null)
+            SettingManager.Instance.ShowSettingPanel();
     }
     #endregion
 }

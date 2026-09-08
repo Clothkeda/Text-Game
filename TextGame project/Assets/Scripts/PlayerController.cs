@@ -69,6 +69,11 @@ public class PlayerController : MonoBehaviour
         {
             rBody.linearVelocity = dir * 2f;
         }
+        if (Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.RightControl))
+        {
+            Debug.Log("按下Ctrl键");
+            EndGame();
+        }
     }
 
     public void RegisterInteract(string objectKey)
@@ -99,6 +104,18 @@ public class PlayerController : MonoBehaviour
     public void EndGame()
     {
         isGameActive = false;
-        SceneManager.LoadScene(gameSceneName);
+        SceneManager.sceneLoaded += OnGameSceneLoaded;
+        SceneManager.LoadScene(Constants.SAMPLE_SCENE);
+    }
+
+    private void OnGameSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        SceneManager.sceneLoaded -= OnGameSceneLoaded;
+
+        if (scene.name == Constants.SAMPLE_SCENE && VNManager.Instance != null)
+        {
+            // 退出小游戏模式，直接加载名为"11"的新剧情表格并开始播放
+            VNManager.Instance.BackTextGame("11");
+        }
     }
 }

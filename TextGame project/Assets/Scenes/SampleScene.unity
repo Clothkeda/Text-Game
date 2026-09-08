@@ -7949,7 +7949,7 @@ RectTransform:
   - {fileID: 1390486193}
   - {fileID: 1499269556}
   - {fileID: 1504016251}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1845535350}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -10483,6 +10483,7 @@ MonoBehaviour:
   settingButton: {fileID: 1850864663}
   homeButton: {fileID: 212651310}
   closeButton: {fileID: 1121918066}
+  isMiniGameMode: 0
 --- !u!4 &1845535350
 Transform:
   m_ObjectHideFlags: 0
@@ -10502,6 +10503,7 @@ Transform:
   - {fileID: 910096200}
   - {fileID: 709648252}
   - {fileID: 1418430512}
+  - {fileID: 1561062985}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1847016985
@@ -12519,6 +12521,5 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 519420032}
-  - {fileID: 1561062985}
   - {fileID: 64000457}
   - {fileID: 1845535350}

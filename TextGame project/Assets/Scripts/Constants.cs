@@ -58,4 +58,7 @@ public class Constants
 
     public static string GOTO = "goto";
     public static string NEW_STORY_FILE_NAME = "1";
+    public static string BACK_STORY_FILE_NAME = "11";
+    
+    public static string SAMPLE_SCENE = "SampleScene";
 }
