@@ -45,9 +45,9 @@ public class Constants
     public static int SLOTS_PER_PAGE = 8;
     public static int TOTAL_SLOTS = 40;
     public static string COLON = ":";
-    public static string SAVE_GAME = "save_game";
-    public static string LOAD_GAME = "load_game";
-    public static string EMPLY_SLOT = "emply_slot";
+    public static string SAVE_GAME = "保存游戏";
+    public static string LOAD_GAME = "加载游戏";
+    public static string EMPLY_SLOT = "空栏位";
     
     public static string CAMERA_NOT_FOUND = "Main camera not found!";
     public static string SAVE_FILE_PATH = "saves";
