@@ -8,6 +8,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public class VNManager : MonoBehaviour
 {
@@ -333,6 +334,11 @@ public class VNManager : MonoBehaviour
         if (NotNullNorEmpty(data.pageAction) && pageImage != null)
         {
             UpdatePageImage(data.pageAction, data.pageImageFileName, pageImage);
+            dialogueBox.SetActive(false);
+        }
+        else
+        {
+            dialogueBox.SetActive(true);
         }
         if (NotNullNorEmpty(data.character1Action) && characterImage1 != null)
         {
